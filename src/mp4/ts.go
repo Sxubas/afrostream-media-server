@@ -46,14 +46,10 @@ type AdaptationField struct {
 	SplicingPointFlag byte;
 	TransportPrivateDataFlag byte;
 	AdaptationFieldExtensionFlag byte;
+	PCR PCR;
 }
 
-type AdaptationFieldStuffed struct {
-	StuffingBytes byte;
-}
-
-type AdaptationFieldExtended struct {
-	AdaptationFieldExtensionFlag byte;
+type PCR struct {
 	ProgramClockReferenceBase uint64; // 33b;
 	Reserved byte; // 6b;
 	ProgramClockReferenceExtension uint16; // 9b
@@ -141,30 +137,59 @@ func (pmt PMT) Bytes() (data []byte) {
 // General parts
 func (header Header) Bytes() (data[] byte) {
 	data = make([]byte, 4)
-	data[0] = 47
+	data[0] = 0x47
 
-	data[1]  = header.TransportPriority
-	data[1] |= header.PayloadUnitStartIndicator << 1
-	data[1] |= header.TransportScramblingControl << 2
-	data[1] |= byte((header.PID >> 8) << 3);
+	data[1]  = header.TransportErrorIndicator << 7
+	data[1] |= header.PayloadUnitStartIndicator << 6
+	data[1] |= header.TransportPriority << 5
+	data[1] |= byte(header.PID >> 8);
 
 	data[2] = byte(header.PID)
 
-	data[3]  = header.TransportScramblingControl
-	data[3] |= header.AdaptationFieldControl << 2
-	data[3] |= header.ContinuityCounter << 4
+	data[3]  = header.TransportScramblingControl << 6
+	data[3] |= header.AdaptationFieldControl << 4
+	data[3] |= header.ContinuityCounter
 	return
 }
 
-func (field AdaptationFieldStuffed) Bytes (data[] byte) {
+func (pcr PCR) Bytes() (data []byte) {
+	data = make([]byte, 4)
+	data[0] = byte(pcr.ProgramClockReferenceBase >> 17)
+	data[1] = byte(pcr.ProgramClockReferenceBase >> 1)
+
+	data[2]  = byte(pcr.ProgramClockReferenceBase) << 7
+	data[2] |= pcr.Reserved << 6
+	data[2] |= byte(pcr.ProgramClockReferenceExtension >> 8)
+
+	data[3]  = byte(pcr.ProgramClockReferenceExtension)
 	return
 }
 
-func (field AdaptationFieldExtended) Bytes (data[] byte) {
-	return
-}
+func (field AdaptationField) Bytes() (data[] byte) {
+	data = make([]byte, field.AdaptationFieldLength);
+	data[0] = field.AdaptationFieldLength
 
-func (field AdaptationField) Bytes (data[] byte) {
+	data[1]  = field.DiscontinuityIndicator << 7
+	data[1] |= field.RandomAccessIndicator << 6
+	data[1] |= field.ElementaryStreamPriorityIndicator << 5
+	data[1] |= field.PCR_Flag << 4
+	data[1] |= field.OPCR_Flag << 3
+	data[1] |= field.SplicingPointFlag << 2
+	data[1] |= field.TransportPrivateDataFlag << 1
+	data[1] |= field.AdaptationFieldLength
+
+	var offset byte = 2
+	if field.PCR_Flag == 1 {
+		copy(data[offset:offset+4], field.PCR.Bytes())
+		offset += 4
+	}
+
+	// Stuffing bytes
+	for offset < field.AdaptationFieldLength {
+		data[offset] = 0xff
+		offset++
+	}
+
 	return
 }
 
@@ -192,13 +217,14 @@ func (section ProgramMapSubSection) Bytes() (data []byte) {
 
 func Test() {
 	var header Header;
+	header.TransportErrorIndicator = 1
 	header.PayloadUnitStartIndicator = 1;
 	header.PID = 17;
 	header.AdaptationFieldControl = 1;
 
 	data := header.Bytes();
 	fmt.Printf("%08b\n", data);
-	fmt.Printf("%8d\n", data);
+	fmt.Printf("% 8X\n", data);
 }
 
 func CreateHLSInit() {
