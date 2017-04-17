@@ -1,9 +1,9 @@
 package main
 import (
 	"mp4"
-
+	"ts"
 )
 
 func main() {
-	mp4.Test();
+	ts.Test()
 }
