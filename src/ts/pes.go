@@ -2,15 +2,19 @@ package ts
 
 type PES struct {
 	Packet
+	OptionalHeader *OptionalPESHeader;
+	Section PESSection
 }
 
 type PESSection struct {
+	Bytes
 	PacketStartCodePrefix uint32; // 24b
 	StreamId byte; // 1Byte
 	PES_PacketLength uint16; // 2Bytes
 }
 
 type OptionalPESHeader struct {
+	Bytes
 	PES_ScramblingControl byte; // 2Byte
 	PES_Priority byte;
 	DataAlignmentIndicator byte;
@@ -30,13 +34,25 @@ type OptionalPESHeader struct {
 
 // To bytes
 func (pes PES) Bytes() (data Data) {
-	data = *NewData(188)
-	// PID depends on stream
+	data = pes.Packet.ToBytes()
 
+	// Optional Header
+	if pes.OptionalHeader != nil {
+		data.PushBytes(pes.OptionalHeader)
+	}
+
+	// PES Section
+	data.PushBytes(pes.Section)
 
 	return
 }
 
-func (section PESSection) Bytes() (data Data) {
+func (section PESSection) ToBytes() (data Data) {
+	data = *NewData(6)
+
+	data.PushObj(section.PacketStartCodePrefix, 24)
+	data.PushObj(section.StreamId, 8)
+	data.PushObj(section.PES_PacketLength, 8)
+
 	return
 }

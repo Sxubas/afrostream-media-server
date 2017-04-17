@@ -44,7 +44,7 @@ type PCR struct {
 }
 
 // Bytes
-func (packet Packet) Bytes() (data Data) {
+func (packet Packet) ToBytes() (data Data) {
 	data = *NewData(188)
 
 	// Get header

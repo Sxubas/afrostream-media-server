@@ -4,7 +4,7 @@ package ts
 type PAT struct {
 	Packet
 	PointField byte // 1Byte
-	Sections ProgramAssociationSection
+	Section    ProgramAssociationSection
 }
 
 type ProgramAssociationSection struct {
@@ -27,13 +27,13 @@ type ProgramAssociationSubSection struct {
 
 // To Bytes
 func (pat PAT) Bytes() (data Data) {
-	data = pat.Packet.Bytes()
+	data = pat.Packet.ToBytes()
 
 	// Set PointField
 	data.PushObj(pat.PointField, 8)
 
 	// Program association section
-	data.PushBytes(pat.Sections)
+	data.PushBytes(pat.Section)
 
 	return
 }
@@ -45,8 +45,11 @@ func (section ProgramAssociationSection) ToBytes() (data Data) {
 	data.PushObj(section.SectionSyntaxIndicator, 1)
 	data.PushObj(section.SectionLength, 12)
 	data.PushObj(section.TransportStreamID, 16)
-	data.PushObj(section.VersionNumber, 8)
+	data.PushObj(section.VersionNumber, 5)
+	data.PushObj(section.CurrentNextIndicator, 1)
+	data.PushObj(section.SectionNumber, 8)
 	data.PushObj(section.LastSectionNumber, 8)
+
 
 	for programIndex := 0; programIndex < len(section.Sections); programIndex++ {
 		data.PushObj(section.Sections[programIndex].ProgramNumber, 16)
