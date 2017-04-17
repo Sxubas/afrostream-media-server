@@ -96,7 +96,7 @@ func (field AdaptationField) ToBytes() (data Data) {
 	data.PushObj(field.TransportPrivateDataFlag, 1)
 
 	if field.PCR_Flag == 1 {
-		data.PushAll(field.PCR.Bytes().Data)
+		data.PushBytes(field.PCR)
 	}
 
 	// Stuffing bytes

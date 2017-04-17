@@ -11,9 +11,9 @@ func Test() {
 	header.AdaptationFieldControl = 3;
 	header.ContinuityCounter = 3
 
-	data := header.Bytes();
-	data.printBinary()
-	data.printHex()
+	data := header.ToBytes();
+	data.PrintBinary()
+	data.PrintHex()
 }
 
 func CreateHLSInit() {

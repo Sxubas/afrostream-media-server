@@ -151,10 +151,10 @@ func NewData(length int) *Data {
 	return data
 }
 
-func (data *Data) printBinary() {
+func (data *Data) PrintBinary() {
 	fmt.Printf("%08b\n", data.Data);
 }
 
-func (data *Data) printHex() {
+func (data *Data) PrintHex() {
 	fmt.Printf("% 8X\n", data.Data);
 }
