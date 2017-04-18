@@ -22,16 +22,26 @@ func CreateHLSInit() {
 
 func CreateHLSFragment(mp4 map[string][]interface{},
 	fragmentNumber uint32,
-	fragmentDuration uint32,
-	PMTSpacing uint32) (ts []interface{}){
+	fragmentDuration uint32) (ts []Packet){
 
-	ts = make([]interface{}, 0);
+	ts = make([]Packet, 0);
+	var isVideo bool
+
+	// Check if the mp4 is audio or video
+	if mp4["moov.trak.mdia.minf.smhd"] != nil {
+		isVideo = false
+	}
+	if mp4["moov.trak.mdia.minf.vmhd"] != nil {
+		isVideo = true
+	}
 
 	// Retrieve main information
 
 	// Create default PAT
+	pat := NewPAT()
 
 	// Create Default PMT
+	pmt := NewPMT()
 
 	// Fill with Stream
 
@@ -44,8 +54,11 @@ func CreateHLSFragment(mp4 map[string][]interface{},
 	return
 }
 
-func CreateHLSInitWithConf() {
+func CreateHLSInitWithConf(mp4 map[string][]interface{}, fragmentNumber uint32, fragmentDuration uint32) (ts []Packet) {
 
+
+
+	return
 }
 
 func CreateHLSFragmentWithConf() {

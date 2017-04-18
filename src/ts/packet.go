@@ -5,9 +5,9 @@ import (
 )
 
 type Packet struct {
-	Header Header
-	AdaptationField AdaptationField
-	Payload []byte
+	Header
+	AdaptationField
+	Payload
 }
 
 // Structures
@@ -51,7 +51,7 @@ func (packet Packet) ToBytes() (data Data) {
 	data.PushBytes(packet.Header)
 
 	// Get adaptation field
-	if packet.hasAdaptationField() {
+	if packet.HasAdaptationField() {
 		data.PushBytes(packet.AdaptationField)
 	}
 
@@ -109,6 +109,11 @@ func (field AdaptationField) ToBytes() (data Data) {
 }
 
 // Check if the current packet has adaptation field flag activated
-func (packet Packet) hasAdaptationField() (bool bool){
+func (packet Packet) HasAdaptationField() bool {
 	return packet.Header.AdaptationFieldControl & 2 != 0
+}
+
+// Check if the current packet has payload field flag activated
+func (packet Packet) HasPayload() bool {
+	return packet.Header.AdaptationFieldControl & 1 != 0
 }

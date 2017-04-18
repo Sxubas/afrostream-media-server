@@ -4,6 +4,7 @@ type PES struct {
 	Packet
 	OptionalHeader *OptionalPESHeader;
 	Section PESSection
+	crc32 uint32; // 4Bytes
 }
 
 type PESSection struct {
@@ -43,6 +44,14 @@ func (pes PES) Bytes() (data Data) {
 
 	// PES Section
 	data.PushBytes(pes.Section)
+
+	if (pes.HasPayload()) {
+		// Push payload
+		data.PushBytes(pes.Payload)
+	}
+
+	// Fill remaining bytes with 0xff
+	data.FillRemaining(0xff)
 
 	return
 }

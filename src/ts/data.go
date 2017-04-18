@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"hash/crc32"
 )
 
 type Data struct {
@@ -77,6 +78,15 @@ func (data *Data) WriteOR(byte byte) {
 func (data *Data) Write(byte byte) {
 	*data.GetCurrentByte() = byte
 	data.Offset += 8
+}
+
+// Fill rest of data with byte
+func (data *Data) FillRemaining(byte byte) {
+	lenData := len(data.Data)
+
+	for data.Offset != lenData {
+		data.Write(byte)
+	}
 }
 
 
@@ -157,4 +167,8 @@ func (data *Data) PrintBinary() {
 
 func (data *Data) PrintHex() {
 	fmt.Printf("% 8X\n", data.Data);
+}
+
+func (data *Data) GenerateCRC32() uint32 {
+	return crc32.Checksum(data.Data, crc32.IEEETable)
 }
