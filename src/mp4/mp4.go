@@ -32,11 +32,11 @@
 package mp4
 
 import (
-	"os"
 	"encoding/binary"
 	"log"
-	"strings"
+	"os"
 	"reflect"
+	"strings"
 )
 
 var debugMode bool
@@ -44,63 +44,63 @@ var funcBoxes map[string]interface{}
 
 type JsonConfig struct {
 	SegmentDuration uint32
-	Tracks map[string][]TrackEntry
+	Tracks          map[string][]TrackEntry
 }
 
 type TrackEntry struct {
-	Name string
+	Name      string
 	Bandwidth uint64
-	File string
-	Lang string
-	Config *DashConfig `json:",omitempty"`
+	File      string
+	Lang      string
+	Config    *DashConfig `json:",omitempty"`
 }
 
 type DashAudioEntry struct {
 	// Sound fields if Type == "audio"
-	NumberOfChannels uint16			// MP4A MP4 Box Info (eg: 2)
-	SampleSize uint16						// MP4A MP4 Box Info (eg: 16)
-	CompressionId uint16				 // MP4A MP4 Box Info (eg: 0)
-	SampleRate uint32						// MP4A MP4 Box Info (eg: 3145728000)
+	NumberOfChannels uint16 // MP4A MP4 Box Info (eg: 2)
+	SampleSize       uint16 // MP4A MP4 Box Info (eg: 16)
+	CompressionId    uint16 // MP4A MP4 Box Info (eg: 0)
+	SampleRate       uint32 // MP4A MP4 Box Info (eg: 3145728000)
 }
 
 type DashVideoEntry struct {
 	// Video fields if Type == "video"
-	Width uint16								 // AVC1 MP4 Box info (eg: 426)
-	Height uint16								// AVC1 MP4 Box info (eg: 240)
-	HorizontalResolution uint32	// AVC1 MP4 Box info (eg: 4718592)
-	VerticalResolution uint32		// AVC1 MP4 Box info (eg: 4718592)
-	EntryDataSize uint32				 // AVC1 MP4 Box info (eg: 0)
-	FramesPerSample uint16			 // AVC1 MP4 Box info (eg: 1)
-	BitDepth uint16							// AVC1 MP4 Box info (eg: 24)
-	ColorTableIndex int16				// AVC1 MP4 Box info (eg: -1)
-	CodecInfo [3]byte						// AVCC MP4 Box AVC Profile/Comptaiblity/Level Information (eg: []byte{ 0x42, 0xC0, 0x1E }
-	NalUnitSize byte						 // AVCC MP4 Box info NALUnitLength field. upper 6-bits are reserved as 111111b aka | 0xf6 (eg: 0xFF)
-	SPSEntryCount uint8					// AVCC MP4 Box info (eg: 1)
-	SPSSize uint16							 // AVCC MP4 Box info (eg: 23)
-	SPSData []byte							 // AVCC MP4 Box info (eg: [103 66 192 30 219 2 128 191 229 192 68 0 0 15 164 0 7 83 0 60 88 187 128])
-	PPSEntryCount uint8					// AVCC MP4 Box info (eg: 1)
-	PPSSize uint16							 // AVCC MP4 Box info (eg: 4)
-	PPSData []byte							 // AVCC MP4 Box info (eg: 104 202 140 178)
-	StssBoxOffset int64
-	StssBoxSize uint32
-	CttsBoxOffset int64
-	CttsBoxSize uint32
+	Width                uint16  // AVC1 MP4 Box info (eg: 426)
+	Height               uint16  // AVC1 MP4 Box info (eg: 240)
+	HorizontalResolution uint32  // AVC1 MP4 Box info (eg: 4718592)
+	VerticalResolution   uint32  // AVC1 MP4 Box info (eg: 4718592)
+	EntryDataSize        uint32  // AVC1 MP4 Box info (eg: 0)
+	FramesPerSample      uint16  // AVC1 MP4 Box info (eg: 1)
+	BitDepth             uint16  // AVC1 MP4 Box info (eg: 24)
+	ColorTableIndex      int16   // AVC1 MP4 Box info (eg: -1)
+	CodecInfo            [3]byte // AVCC MP4 Box AVC Profile/Comptaiblity/Level Information (eg: []byte{ 0x42, 0xC0, 0x1E }
+	NalUnitSize          byte    // AVCC MP4 Box info NALUnitLength field. upper 6-bits are reserved as 111111b aka | 0xf6 (eg: 0xFF)
+	SPSEntryCount        uint8   // AVCC MP4 Box info (eg: 1)
+	SPSSize              uint16  // AVCC MP4 Box info (eg: 23)
+	SPSData              []byte  // AVCC MP4 Box info (eg: [103 66 192 30 219 2 128 191 229 192 68 0 0 15 164 0 7 83 0 60 88 187 128])
+	PPSEntryCount        uint8   // AVCC MP4 Box info (eg: 1)
+	PPSSize              uint16  // AVCC MP4 Box info (eg: 4)
+	PPSData              []byte  // AVCC MP4 Box info (eg: 104 202 140 178)
+	StssBoxOffset        int64
+	StssBoxSize          uint32
+	CttsBoxOffset        int64
+	CttsBoxSize          uint32
 }
 
 type DashConfig struct {
 	StszBoxOffset int64
-	StszBoxSize uint32
+	StszBoxSize   uint32
 	MdatBoxOffset int64
-	MdatBoxSize uint32							// MDAT MP4 Box Size
-	Type string									// "audio" || "video
-	Rate int32									 // Typically 0x00010000 (1.0)
-	Volume int16								 // Typically 0x0100 (Full Volume)
-	Duration uint64							// MDHD MP4 Box info
-	Timescale uint32						 // MDHD MP4 Box info (eg: for audio: 48000, for video: 60000)
-	Language [3]byte						 // ISO-639-2/T 3 letters code (eg: []byte{ 'e', 'n', 'g' }
-	HandlerType uint32					 // HDLR MP4 Box info (eg: 1986618469)
-	SampleDelta uint32					 // STTS MP4 Box SampleDelta via Entries[0] (eg: 1024)
-	MediaTime int64							// ELST MP4 Box MediaTime
+	MdatBoxSize   uint32  // MDAT MP4 Box Size
+	Type          string  // "audio" || "video
+	Rate          int32   // Typically 0x00010000 (1.0)
+	Volume        int16   // Typically 0x0100 (Full Volume)
+	Duration      uint64  // MDHD MP4 Box info
+	Timescale     uint32  // MDHD MP4 Box info (eg: for audio: 48000, for video: 60000)
+	Language      [3]byte // ISO-639-2/T 3 letters code (eg: []byte{ 'e', 'n', 'g' }
+	HandlerType   uint32  // HDLR MP4 Box info (eg: 1986618469)
+	SampleDelta   uint32  // STTS MP4 Box SampleDelta via Entries[0] (eg: 1024)
+	MediaTime     int64   // ELST MP4 Box MediaTime
 
 	Audio *DashAudioEntry `json:",omitempty"`
 	Video *DashVideoEntry `json:",omitempty"`
@@ -109,9 +109,9 @@ type DashConfig struct {
 type Mp4 struct {
 	Filename string
 	Language string
-	IsVideo bool
-	IsAudio bool
-	Boxes map[string][]interface{}
+	IsVideo  bool
+	IsAudio  bool
+	Boxes    map[string][]interface{}
 }
 
 type ParentBox struct {
@@ -120,16 +120,16 @@ type ParentBox struct {
 }
 
 type FtypBox struct {
-	Size uint32
-	MajorBrand [4]byte
-	MinorVersion uint32
+	Size             uint32
+	MajorBrand       [4]byte
+	MinorVersion     uint32
 	CompatibleBrands [][4]byte
 }
 
 type StypBox struct {
-	Size uint32
-	MajorBrand [4]byte
-	MinorVersion uint32
+	Size             uint32
+	MajorBrand       [4]byte
+	MinorVersion     uint32
 	CompatibleBrands [][4]byte
 }
 
@@ -139,130 +139,130 @@ type FreeBox struct {
 }
 
 type MvhdBox struct {
-	Size uint32
-	Version byte
-	Reserved [3]byte
-	CreationTime uint64
+	Size             uint32
+	Version          byte
+	Reserved         [3]byte
+	CreationTime     uint64
 	ModificationTime uint64
-	Timescale uint32
-	Duration uint64
-	Rate int32
-	Volume int16
-	Reserved2 uint16
-	Reserved3 uint64
-	Matrix [9]int32
-	PreDefined [6]uint32
-	NextTrackID uint32
+	Timescale        uint32
+	Duration         uint64
+	Rate             int32
+	Volume           int16
+	Reserved2        uint16
+	Reserved3        uint64
+	Matrix           [9]int32
+	PreDefined       [6]uint32
+	NextTrackID      uint32
 }
 
 type TkhdBox struct {
-	Size uint32
-	Version byte
-	Flags [3]byte
-	CreationTime uint64
+	Size             uint32
+	Version          byte
+	Flags            [3]byte
+	CreationTime     uint64
 	ModificationTime uint64
-	TrackID uint32
-	Reserved uint32
-	Duration uint64
-	Reserved2 uint64
-	Layer int16
-	AlternateGroup int16
-	Volume int16
-	Reserved3 uint16
-	Matrix [9]int32
-	Width uint32
-	Height uint32
+	TrackID          uint32
+	Reserved         uint32
+	Duration         uint64
+	Reserved2        uint64
+	Layer            int16
+	AlternateGroup   int16
+	Volume           int16
+	Reserved3        uint16
+	Matrix           [9]int32
+	Width            uint32
+	Height           uint32
 }
 
 type ElstBox struct {
-	Size uint32
-	Version byte
-	Reserved [3]byte
-	EntryCount uint32
-	SegmentDuration uint64
-	MediaTime int64
-	MediaRateInteger int16
+	Size              uint32
+	Version           byte
+	Reserved          [3]byte
+	EntryCount        uint32
+	SegmentDuration   uint64
+	MediaTime         int64
+	MediaRateInteger  int16
 	MediaRateFraction int16
 }
 
 type MdhdBox struct {
-	Size uint32
-	Version byte
-	Reserved [3]byte
-	CreationTime uint64
+	Size             uint32
+	Version          byte
+	Reserved         [3]byte
+	CreationTime     uint64
 	ModificationTime uint64
-	Timescale uint32
-	Duration uint64
-	Language uint16
-	PreDefined uint16
+	Timescale        uint32
+	Duration         uint64
+	Language         uint16
+	PreDefined       uint16
 }
 
 type HdlrBox struct {
-	Size uint32
-	Version byte
-	Reserved [3]byte
-	PreDefined uint32
+	Size        uint32
+	Version     byte
+	Reserved    [3]byte
+	PreDefined  uint32
 	HandlerType uint32
-	Reserved2 [3]uint32
-	Name []byte
+	Reserved2   [3]uint32
+	Name        []byte
 }
 
 type VmhdBox struct {
-	Size uint32
-	Version byte
-	Reserved [3]byte
+	Size         uint32
+	Version      byte
+	Reserved     [3]byte
 	GraphicsMode uint16
-	OpColor [3]uint16
+	OpColor      [3]uint16
 }
 
 type SmhdBox struct {
-	Size uint32
-	Version byte
-	Reserved [3]byte
-	Balance int16
+	Size      uint32
+	Version   byte
+	Reserved  [3]byte
+	Balance   int16
 	Reserved2 uint16
 }
 
 type HmhdBox struct {
-	Version byte
-	Reserved [3]byte
+	Version    byte
+	Reserved   [3]byte
 	MaxPDUSize uint16
 	AvgPDUSize uint16
 	MaxBitrate uint32
 	AvgBitrate uint32
-	Reserved2 uint32
+	Reserved2  uint32
 }
 
 type DrefBox struct {
-	Size uint32
-	Version byte
-	Reserved [3]byte
+	Size       uint32
+	Version    byte
+	Reserved   [3]byte
 	EntryCount uint32
-	UrlBox []DrefUrlBox
-	UrnBox []DrefUrnBox
+	UrlBox     []DrefUrlBox
+	UrnBox     []DrefUrnBox
 }
 
 type DrefUrlBox struct {
-	Size uint32
+	Size     uint32
 	Location string
-	Version byte
-	Flags [3]byte
+	Version  byte
+	Flags    [3]byte
 }
 
 type DrefUrnBox struct {
-	Size uint32
-	Name string
+	Size     uint32
+	Name     string
 	Location string
-	Version byte
-	Flags[3]byte
+	Version  byte
+	Flags    [3]byte
 }
 
 type SttsBox struct {
-	Size uint32
-	Version byte
-	Reserved [3]byte
+	Size       uint32
+	Version    byte
+	Reserved   [3]byte
 	EntryCount uint32
-	Entries []SttsBoxEntry
+	Entries    []SttsBoxEntry
 }
 
 type SttsBoxEntry struct {
@@ -271,220 +271,220 @@ type SttsBoxEntry struct {
 }
 
 type CttsBox struct {
-	Size uint32
-	Offset int64
-	Version byte
-	Reserved [3]byte
+	Size       uint32
+	Offset     int64
+	Version    byte
+	Reserved   [3]byte
 	EntryCount uint32
-	Entries []CttsBoxEntry
+	Entries    []CttsBoxEntry
 }
 
 type CttsBoxEntry struct {
-	SampleCount uint32
+	SampleCount  uint32
 	SampleOffset uint32
 }
 
 type StssBox struct {
-	Size uint32
-	Offset int64
-	Version byte
-	Reserved [3]byte
-	EntryCount uint32
+	Size         uint32
+	Offset       int64
+	Version      byte
+	Reserved     [3]byte
+	EntryCount   uint32
 	SampleNumber []uint32
 }
 
 type MehdBox struct {
-	Size uint32
-	Version byte
-	Reserved [3]byte
+	Size             uint32
+	Version          byte
+	Reserved         [3]byte
 	FragmentDuration uint64
 }
 
 type TrexBox struct {
-	Size uint32
-	Version byte
-	Reserved [3]byte
-	TrackID uint32
+	Size                          uint32
+	Version                       byte
+	Reserved                      [3]byte
+	TrackID                       uint32
 	DefaultSampleDescriptionIndex uint32
-	DefaultSampleDuration uint32
-	DefaultSampleSize uint32
-	DefaultSampleFlags uint32
+	DefaultSampleDuration         uint32
+	DefaultSampleSize             uint32
+	DefaultSampleFlags            uint32
 }
 
 type StsdBox struct {
-	Size uint32
-	Version byte
-	Reserved [3]byte
+	Size       uint32
+	Version    byte
+	Reserved   [3]byte
 	EntryCount uint32
 }
 
 type Mp4aBox struct {
-	Size uint32
-	Reserved [6]byte
+	Size               uint32
+	Reserved           [6]byte
 	DataReferenceIndex uint16
-	Version uint16
-	RevisionLevel uint16
-	Vendor uint32
-	NumberOfChannels uint16
-	SampleSize uint16
-	CompressionId uint16
-	Reserved2 uint16
-	SampleRate uint32
+	Version            uint16
+	RevisionLevel      uint16
+	Vendor             uint32
+	NumberOfChannels   uint16
+	SampleSize         uint16
+	CompressionId      uint16
+	Reserved2          uint16
+	SampleRate         uint32
 }
 
 type Avc1Box struct {
-	Size uint32
-	Reserved [6]byte
-	dataReferenceIndex uint16
-	Version uint16
-	RevisionLevel uint16
-	Vendor uint32
-	TemporalQuality uint32
-	SpacialQuality uint32
-	Width uint16
-	Height uint16
+	Size                 uint32
+	Reserved             [6]byte
+	dataReferenceIndex   uint16
+	Version              uint16
+	RevisionLevel        uint16
+	Vendor               uint32
+	TemporalQuality      uint32
+	SpacialQuality       uint32
+	Width                uint16
+	Height               uint16
 	HorizontalResolution uint32
-	VerticalResolution uint32
-	EntryDataSize uint32
-	FramesPerSample uint16
-	CompressorName [32]byte
-	BitDepth uint16
-	ColorTableIndex int16
+	VerticalResolution   uint32
+	EntryDataSize        uint32
+	FramesPerSample      uint16
+	CompressorName       [32]byte
+	BitDepth             uint16
+	ColorTableIndex      int16
 }
 
 type AvcCBox struct {
-	Size uint32
-	ConfigurationVersion uint8	/* 1 */
-	AVCProfileIndication uint8	/* profile idc in SPS */
+	Size                 uint32
+	ConfigurationVersion uint8 /* 1 */
+	AVCProfileIndication uint8 /* profile idc in SPS */
 	ProfileCompatibility uint8
-	AVCLevelIndication uint8	/* level idc in SPS */
-	NalUnitSize uint8		/* in bytes of the NALUnitLength field. upper 6-bits are reserved as 111111b aka | 0xf6 */
-	SPSEntryCount uint8					 /* Number of Sequence Parameter Set Entries */
-	SPSSize uint16		/* Sequence Parameter Set Size upper 3-bits are reserved as 111b aka | 0xe0 */
-	SPSData []byte		/* Sequence Parameter Set Datas */
-	PPSEntryCount uint8					 /* Number of Picture Parameter Set Entries */
-	PPSSize uint16		/* Picture Parameter Set Size */
-	PPSData []byte		/* Picture Parameter Set Datas */
+	AVCLevelIndication   uint8  /* level idc in SPS */
+	NalUnitSize          uint8  /* in bytes of the NALUnitLength field. upper 6-bits are reserved as 111111b aka | 0xf6 */
+	SPSEntryCount        uint8  /* Number of Sequence Parameter Set Entries */
+	SPSSize              uint16 /* Sequence Parameter Set Size upper 3-bits are reserved as 111b aka | 0xe0 */
+	SPSData              []byte /* Sequence Parameter Set Datas */
+	PPSEntryCount        uint8  /* Number of Picture Parameter Set Entries */
+	PPSSize              uint16 /* Picture Parameter Set Size */
+	PPSData              []byte /* Picture Parameter Set Datas */
 }
 
 /* MPEG-4 Bit Rate Box
  * This box signals the bit rate information of the AVC video stream. */
 type BtrtBox struct {
-	Size uint32
-	DecodingBufferSize uint32	/* the size of the decoding buffer for the elementary stream in bytes */
-	MaxBitrate uint32		/* the maximum rate in bits/second over any window of one second */
-	AvgBitrate uint32		/* the average rate in bits/second over the entire presentation */
+	Size               uint32
+	DecodingBufferSize uint32 /* the size of the decoding buffer for the elementary stream in bytes */
+	MaxBitrate         uint32 /* the maximum rate in bits/second over any window of one second */
+	AvgBitrate         uint32 /* the average rate in bits/second over the entire presentation */
 }
 
 type EsdsBox struct {
-	Size uint32
+	Size    uint32
 	Version uint32
-	Data []byte			/* Unkown for the moment ??? */
+	Data    []byte /* Unkown for the moment ??? */
 }
 
 type StscBox struct {
-	Size uint32
-	Version byte
-	Flags [3]byte
+	Size       uint32
+	Version    byte
+	Flags      [3]byte
 	EntryCount uint32
-	Entries []StscEntry
+	Entries    []StscEntry
 }
 
 type StscEntry struct {
-	FirstChunk uint32
-	SamplesPerChunk uint32
+	FirstChunk             uint32
+	SamplesPerChunk        uint32
 	SampleDescriptionIndex uint32
 }
 
 type StszBox struct {
-	Size uint32
-	Offset int64
-	Version byte
-	Reserved [3]byte
-	SampleSize uint32
+	Size        uint32
+	Offset      int64
+	Version     byte
+	Reserved    [3]byte
+	SampleSize  uint32
 	SampleCount uint32
-	EntrySize []uint32
+	EntrySize   []uint32
 }
 
 type SdtpBox struct {
-	Size uint32
-	Version byte
+	Size        uint32
+	Version     byte
 	SampleCount uint32
-	Entries []uint8
+	Entries     []uint8
 }
 
 type StcoBox struct {
-	Size uint32
-	Version byte
-	Reserved [3]byte
-	EntryCount uint32
+	Size        uint32
+	Version     byte
+	Reserved    [3]byte
+	EntryCount  uint32
 	ChunkOffset []uint32
 }
 
 /* MOOF SubBoxes */
 type MfhdBox struct {
-	Size uint32
-	Version byte
-	Reserved [3]byte
+	Size           uint32
+	Version        byte
+	Reserved       [3]byte
 	SequenceNumber uint32
 }
 
 type TfhdBox struct {
-	Size uint32
+	Size    uint32
 	Version byte
-	Flags [3]byte
+	Flags   [3]byte
 	TrackID uint32
 	// All of the following are optional fields
-	BaseDataOffset uint64
+	BaseDataOffset         uint64
 	SampleDescriptionIndex uint32
-	DefaultSampleDuration uint32
-	DefaultSampleSize uint32
-	DefaultSampleFlags uint32
+	DefaultSampleDuration  uint32
+	DefaultSampleSize      uint32
+	DefaultSampleFlags     uint32
 }
 
 type TrunBox struct {
-	Size uint32
-	Version byte
-	Flags [3]byte
+	Size        uint32
+	Version     byte
+	Flags       [3]byte
 	SampleCount uint32
 	// All of the following are optional fields
-	DataOffset int32
+	DataOffset       int32
 	FirstSampleFlags uint32
-	Samples []TrunBoxSample
+	Samples          []TrunBoxSample
 }
 
 type TrunBoxSample struct {
-	Duration uint32
-	Size uint32
-	Flags uint32
+	Duration              uint32
+	Size                  uint32
+	Flags                 uint32
 	CompositionTimeOffset int64
 }
 
 type TfdtBox struct {
-	Size uint32
-	Version byte // Must be 1
-	Reserved [3]byte
+	Size                uint32
+	Version             byte // Must be 1
+	Reserved            [3]byte
 	BaseMediaDecodeTime uint64
 }
 
 type FrmaBox struct {
-	Size uint32
+	Size       uint32
 	DataFormat [4]byte
 }
 
 type SchmBox struct {
-	Size uint32
-	Version byte
-	Flags [3]byte
-	SchemeType [4]byte
+	Size          uint32
+	Version       byte
+	Flags         [3]byte
+	SchemeType    [4]byte
 	SchemeVersion uint32
-	SchemeUri string
+	SchemeUri     string
 }
 
 type MdatBox struct {
-	Size uint32
+	Size     uint32
 	Filename string
-	Offset int64
+	Offset   int64
 }
 
 // ***
@@ -519,7 +519,7 @@ func replaceBox(mp4 map[string][]interface{}, boxPath string, box interface{}) {
 
 func (parent ParentBox) Bytes() (data []byte) {
 	data = make([]byte, 8)
-	binary.BigEndian.PutUint32(data[0:4], parent.Size + 8)
+	binary.BigEndian.PutUint32(data[0:4], parent.Size+8)
 	copy(data[4:8], parent.Name[:])
 
 	return
@@ -551,7 +551,7 @@ func (ftyp FtypBox) Bytes() (data []byte) {
 	boxSize := ftyp.Size + 8
 	data = make([]byte, boxSize)
 	binary.BigEndian.PutUint32(data[0:4], boxSize)
-	copy(data[4:8], []byte{ 'f', 't', 'y', 'p' })
+	copy(data[4:8], []byte{'f', 't', 'y', 'p'})
 	copy(data[8:12], ftyp.MajorBrand[:])
 	binary.BigEndian.PutUint32(data[12:16], ftyp.MinorVersion)
 	i := 0
@@ -588,7 +588,7 @@ func (styp StypBox) Bytes() (data []byte) {
 	boxSize := styp.Size + 8
 	data = make([]byte, boxSize)
 	binary.BigEndian.PutUint32(data[0:4], boxSize)
-	copy(data[4:8], []byte{ 's', 't', 'y', 'p' })
+	copy(data[4:8], []byte{'s', 't', 'y', 'p'})
 	copy(data[8:12], styp.MajorBrand[:])
 	binary.BigEndian.PutUint32(data[12:16], styp.MinorVersion)
 	i := 0
@@ -617,7 +617,7 @@ func (free FreeBox) Bytes() (data []byte) {
 	boxSize := free.Size + 8
 	data = make([]byte, boxSize)
 	binary.BigEndian.PutUint32(data[0:4], boxSize)
-	copy(data[4:8], []byte{ 'f', 'r', 'e', 'e' })
+	copy(data[4:8], []byte{'f', 'r', 'e', 'e'})
 	copy(data[8:], free.Data[:])
 
 	return
@@ -643,44 +643,44 @@ func readTkhdBox(f *os.File, size uint32, level int, boxPath string, mp4 map[str
 	}
 	copy(tkhd.Flags[:], data[1:4])
 	if tkhd.Version == 0 {
-		tkhd.CreationTime = uint64(binary.BigEndian.Uint32(data[offset:offset+4]))
+		tkhd.CreationTime = uint64(binary.BigEndian.Uint32(data[offset : offset+4]))
 		offset += 4
-		tkhd.ModificationTime = uint64(binary.BigEndian.Uint32(data[offset:offset+4]))
+		tkhd.ModificationTime = uint64(binary.BigEndian.Uint32(data[offset : offset+4]))
 		offset += 4
 	} else {
-		tkhd.CreationTime = binary.BigEndian.Uint64(data[offset:offset+8])
+		tkhd.CreationTime = binary.BigEndian.Uint64(data[offset : offset+8])
 		offset += 8
-		tkhd.ModificationTime = binary.BigEndian.Uint64(data[offset:offset+8])
+		tkhd.ModificationTime = binary.BigEndian.Uint64(data[offset : offset+8])
 		offset += 8
 	}
-	tkhd.TrackID = binary.BigEndian.Uint32(data[offset:offset+4])
+	tkhd.TrackID = binary.BigEndian.Uint32(data[offset : offset+4])
 	offset += 4
-	tkhd.Reserved = binary.BigEndian.Uint32(data[offset:offset+4])
+	tkhd.Reserved = binary.BigEndian.Uint32(data[offset : offset+4])
 	offset += 4
 	if tkhd.Version == 0 {
-		tkhd.Duration = uint64(binary.BigEndian.Uint32(data[offset:offset+4]))
+		tkhd.Duration = uint64(binary.BigEndian.Uint32(data[offset : offset+4]))
 		offset += 4
 	} else {
-		tkhd.Duration = binary.BigEndian.Uint64(data[offset:offset+8])
+		tkhd.Duration = binary.BigEndian.Uint64(data[offset : offset+8])
 		offset += 8
 	}
-	tkhd.Reserved2 = binary.BigEndian.Uint64(data[offset:offset+8])
+	tkhd.Reserved2 = binary.BigEndian.Uint64(data[offset : offset+8])
 	offset += 8
-	tkhd.Layer = int16(binary.BigEndian.Uint16(data[offset:offset+2]))
+	tkhd.Layer = int16(binary.BigEndian.Uint16(data[offset : offset+2]))
 	offset += 2
-	tkhd.AlternateGroup = int16(binary.BigEndian.Uint16(data[offset:offset+2]))
+	tkhd.AlternateGroup = int16(binary.BigEndian.Uint16(data[offset : offset+2]))
 	offset += 2
-	tkhd.Volume = int16(binary.BigEndian.Uint16(data[offset:offset+2]))
+	tkhd.Volume = int16(binary.BigEndian.Uint16(data[offset : offset+2]))
 	offset += 2
-	tkhd.Reserved3 = binary.BigEndian.Uint16(data[offset:offset+2])
+	tkhd.Reserved3 = binary.BigEndian.Uint16(data[offset : offset+2])
 	offset += 2
 	for i := 0; i < 9; i++ {
-		tkhd.Matrix[i] = int32(binary.BigEndian.Uint32(data[offset:offset+4]))
+		tkhd.Matrix[i] = int32(binary.BigEndian.Uint32(data[offset : offset+4]))
 		offset += 4
 	}
-	tkhd.Width = binary.BigEndian.Uint32(data[offset:offset+4])
+	tkhd.Width = binary.BigEndian.Uint32(data[offset : offset+4])
 	offset += 4
-	tkhd.Height = binary.BigEndian.Uint32(data[offset:offset+4])
+	tkhd.Height = binary.BigEndian.Uint32(data[offset : offset+4])
 	addBox(mp4, boxPath, tkhd)
 	dumpBox(boxPath, tkhd)
 }
@@ -692,7 +692,7 @@ func (tkhd TkhdBox) Bytes() (data []byte) {
 	data = make([]byte, boxSize)
 
 	binary.BigEndian.PutUint32(data[0:4], boxSize)
-	copy(data[4:8], []byte{ 't', 'k', 'h', 'd' })
+	copy(data[4:8], []byte{'t', 'k', 'h', 'd'})
 	data[8] = tkhd.Version
 	copy(data[9:12], tkhd.Flags[:])
 	if tkhd.Version == 0 {
@@ -760,19 +760,19 @@ func readElstBox(f *os.File, size uint32, level int, boxPath string, mp4 map[str
 	var i uint32
 	for i = 0; i < elst.EntryCount; i++ {
 		if elst.Version == 0 {
-			elst.SegmentDuration = uint64(binary.BigEndian.Uint32(data[offset:offset+4]))
+			elst.SegmentDuration = uint64(binary.BigEndian.Uint32(data[offset : offset+4]))
 			offset += 4
-			elst.MediaTime = int64(binary.BigEndian.Uint32(data[offset:offset+4]))
+			elst.MediaTime = int64(binary.BigEndian.Uint32(data[offset : offset+4]))
 			offset += 4
 		} else {
-			elst.SegmentDuration = binary.BigEndian.Uint64(data[offset:offset+8])
+			elst.SegmentDuration = binary.BigEndian.Uint64(data[offset : offset+8])
 			offset += 8
-			elst.MediaTime = int64(binary.BigEndian.Uint64(data[offset:offset+8]))
+			elst.MediaTime = int64(binary.BigEndian.Uint64(data[offset : offset+8]))
 			offset += 8
 		}
-		elst.MediaRateInteger = int16(binary.BigEndian.Uint16(data[offset:offset+2]))
+		elst.MediaRateInteger = int16(binary.BigEndian.Uint16(data[offset : offset+2]))
 		offset += 2
-		elst.MediaRateFraction = int16(binary.BigEndian.Uint16(data[offset:offset+2]))
+		elst.MediaRateFraction = int16(binary.BigEndian.Uint16(data[offset : offset+2]))
 		offset += 2
 	}
 	addBox(mp4, boxPath, elst)
@@ -799,28 +799,28 @@ func readMdhdBox(f *os.File, size uint32, level int, boxPath string, mp4 map[str
 	}
 	copy(mdhd.Reserved[:], data[1:4])
 	if mdhd.Version == 0 {
-		mdhd.CreationTime = uint64(binary.BigEndian.Uint32(data[offset:offset+4]))
+		mdhd.CreationTime = uint64(binary.BigEndian.Uint32(data[offset : offset+4]))
 		offset += 4
-		mdhd.ModificationTime = uint64(binary.BigEndian.Uint32(data[offset:offset+4]))
+		mdhd.ModificationTime = uint64(binary.BigEndian.Uint32(data[offset : offset+4]))
 		offset += 4
 	} else {
-		mdhd.CreationTime = binary.BigEndian.Uint64(data[offset:offset+8])
+		mdhd.CreationTime = binary.BigEndian.Uint64(data[offset : offset+8])
 		offset += 8
-		mdhd.ModificationTime = binary.BigEndian.Uint64(data[offset:offset+8])
+		mdhd.ModificationTime = binary.BigEndian.Uint64(data[offset : offset+8])
 		offset += 8
 	}
-	mdhd.Timescale = binary.BigEndian.Uint32(data[offset:offset+4])
+	mdhd.Timescale = binary.BigEndian.Uint32(data[offset : offset+4])
 	offset += 4
 	if mdhd.Version == 0 {
-		mdhd.Duration = uint64(binary.BigEndian.Uint32(data[offset:offset+4]))
+		mdhd.Duration = uint64(binary.BigEndian.Uint32(data[offset : offset+4]))
 		offset += 4
 	} else {
-		mdhd.Duration = binary.BigEndian.Uint64(data[offset:offset+8])
+		mdhd.Duration = binary.BigEndian.Uint64(data[offset : offset+8])
 		offset += 8
 	}
-	mdhd.Language = binary.BigEndian.Uint16(data[offset:offset+2])
+	mdhd.Language = binary.BigEndian.Uint16(data[offset : offset+2])
 	offset += 2
-	mdhd.PreDefined = binary.BigEndian.Uint16(data[offset:offset+2])
+	mdhd.PreDefined = binary.BigEndian.Uint16(data[offset : offset+2])
 	addBox(mp4, boxPath, mdhd)
 	dumpBox(boxPath, mdhd)
 }
@@ -832,7 +832,7 @@ func (mdhd MdhdBox) Bytes() (data []byte) {
 	data = make([]byte, boxSize)
 
 	binary.BigEndian.PutUint32(data[0:4], boxSize)
-	copy(data[4:8], []byte{ 'm', 'd', 'h', 'd' })
+	copy(data[4:8], []byte{'m', 'd', 'h', 'd'})
 	data[8] = mdhd.Version
 	copy(data[9:12], mdhd.Reserved[:])
 	if mdhd.Version == 0 {
@@ -876,7 +876,7 @@ func readHdlrBox(f *os.File, size uint32, level int, boxPath string, mp4 map[str
 	hdlr.PreDefined = binary.BigEndian.Uint32(data[4:8])
 	hdlr.HandlerType = binary.BigEndian.Uint32(data[8:12])
 	for i := 0; i < 3; i++ {
-		hdlr.Reserved2[i] = binary.BigEndian.Uint32(data[12+(i*4):16+(i*4)])
+		hdlr.Reserved2[i] = binary.BigEndian.Uint32(data[12+(i*4) : 16+(i*4)])
 	}
 	// String in utf8
 	hdlr.Name = data[24:]
@@ -889,7 +889,7 @@ func (hdlr HdlrBox) Bytes() (data []byte) {
 	data = make([]byte, boxSize)
 
 	binary.BigEndian.PutUint32(data[0:4], boxSize)
-	copy(data[4:8], []byte{ 'h', 'd', 'l', 'r' })
+	copy(data[4:8], []byte{'h', 'd', 'l', 'r'})
 	data[8] = hdlr.Version
 	copy(data[9:12], hdlr.Reserved[:])
 	binary.BigEndian.PutUint32(data[12:16], hdlr.PreDefined)
@@ -914,7 +914,7 @@ func readVmhdBox(f *os.File, size uint32, level int, boxPath string, mp4 map[str
 	copy(vmhd.Reserved[:], data[1:4])
 	vmhd.GraphicsMode = binary.BigEndian.Uint16(data[4:6])
 	for i := 0; i < 3; i++ {
-		vmhd.OpColor[i] = binary.BigEndian.Uint16(data[6+(i*2):8+(i*2)])
+		vmhd.OpColor[i] = binary.BigEndian.Uint16(data[6+(i*2) : 8+(i*2)])
 	}
 	addBox(mp4, boxPath, vmhd)
 	dumpBox(boxPath, vmhd)
@@ -925,7 +925,7 @@ func (vmhd VmhdBox) Bytes() (data []byte) {
 	data = make([]byte, boxSize)
 
 	binary.BigEndian.PutUint32(data[0:4], boxSize)
-	copy(data[4:8], []byte{ 'v', 'm', 'h', 'd' })
+	copy(data[4:8], []byte{'v', 'm', 'h', 'd'})
 	data[8] = vmhd.Version
 	copy(data[9:12], vmhd.Reserved[:])
 	binary.BigEndian.PutUint16(data[12:14], vmhd.GraphicsMode)
@@ -957,7 +957,7 @@ func (smhd SmhdBox) Bytes() (data []byte) {
 	data = make([]byte, boxSize)
 
 	binary.BigEndian.PutUint32(data[0:4], boxSize)
-	copy(data[4:8], []byte{ 's', 'm', 'h', 'd' })
+	copy(data[4:8], []byte{'s', 'm', 'h', 'd'})
 	data[8] = smhd.Version
 	copy(data[9:12], smhd.Reserved[:])
 	binary.BigEndian.PutUint16(data[12:14], uint16(smhd.Balance))
@@ -999,45 +999,45 @@ func readDrefBox(f *os.File, size uint32, level int, boxPath string, mp4 map[str
 	offset = 8
 	var i uint32
 	for i = 0; i < dref.EntryCount; i++ {
-		size := binary.BigEndian.Uint32(data[offset:offset+4])
+		size := binary.BigEndian.Uint32(data[offset : offset+4])
 		offset += 4
-		switch string(data[offset:offset+4]) {
-			case "url ":
-				offset += 4
-				var url DrefUrlBox
-				url.Size = size
-				j := offset
-				for data[j] != 0 {
-					j++
-				}
-				url.Location = string(data[offset:j])
-				offset = j
-				url.Version = data[offset]
-				offset++
-				copy(url.Flags[0:3], data[offset:offset+3])
-				offset += 3
-				dref.UrlBox = append(dref.UrlBox, url)
-			case "urn ":
-				offset += 4
-				var urn DrefUrnBox
-				urn.Size = size
-				var j uint32
-				j = offset
-				for data[j] != 0 {
-					j++
-				}
-				urn.Name = string(data[offset:j])
-				offset = j
-				for data[j] != 0 {
-					j++
-				}
-				urn.Location = string(data[offset:j])
-				offset = j
-				urn.Version = data[offset]
-				offset++
-				copy(urn.Flags[0:3], data[offset:offset+3])
-				offset += 3
-				dref.UrnBox = append(dref.UrnBox, urn)
+		switch string(data[offset : offset+4]) {
+		case "url ":
+			offset += 4
+			var url DrefUrlBox
+			url.Size = size
+			j := offset
+			for data[j] != 0 {
+				j++
+			}
+			url.Location = string(data[offset:j])
+			offset = j
+			url.Version = data[offset]
+			offset++
+			copy(url.Flags[0:3], data[offset:offset+3])
+			offset += 3
+			dref.UrlBox = append(dref.UrlBox, url)
+		case "urn ":
+			offset += 4
+			var urn DrefUrnBox
+			urn.Size = size
+			var j uint32
+			j = offset
+			for data[j] != 0 {
+				j++
+			}
+			urn.Name = string(data[offset:j])
+			offset = j
+			for data[j] != 0 {
+				j++
+			}
+			urn.Location = string(data[offset:j])
+			offset = j
+			urn.Version = data[offset]
+			offset++
+			copy(urn.Flags[0:3], data[offset:offset+3])
+			offset += 3
+			dref.UrnBox = append(dref.UrnBox, urn)
 		}
 	}
 	addBox(mp4, boxPath, dref)
@@ -1050,7 +1050,7 @@ func (dref DrefBox) Bytes() (data []byte) {
 	data = make([]byte, boxSize)
 
 	binary.BigEndian.PutUint32(data[0:4], boxSize)
-	copy(data[4:8], []byte{ 'd', 'r', 'e', 'f' })
+	copy(data[4:8], []byte{'d', 'r', 'e', 'f'})
 	data[8] = dref.Version
 	copy(data[9:12], dref.Reserved[:])
 	binary.BigEndian.PutUint32(data[12:16], dref.EntryCount)
@@ -1058,7 +1058,7 @@ func (dref DrefBox) Bytes() (data []byte) {
 	for _, v := range dref.UrlBox {
 		binary.BigEndian.PutUint32(data[offset:offset+4], v.Size)
 		offset += 4
-		copy(data[offset:offset+4], []byte{ 'u', 'r', 'l', ' ' }[:])
+		copy(data[offset:offset+4], []byte{'u', 'r', 'l', ' '}[:])
 		offset += 4
 		offset += uint32(copy(data[offset:offset+uint32(len(v.Location))], []byte(v.Location)))
 		data[offset] = v.Version
@@ -1068,7 +1068,7 @@ func (dref DrefBox) Bytes() (data []byte) {
 	for _, v := range dref.UrnBox {
 		binary.BigEndian.PutUint32(data[offset:offset+4], v.Size)
 		offset += 4
-		copy(data[offset:offset+4], []byte{ 'u', 'r', 'n', ' ' }[:])
+		copy(data[offset:offset+4], []byte{'u', 'r', 'n', ' '}[:])
 		offset += uint32(copy(data[offset:uint32(len(v.Name))], []byte(v.Name)))
 		offset += uint32(copy(data[offset:uint32(len(v.Location))], []byte(v.Location)))
 		data[offset] = v.Version
@@ -1100,42 +1100,42 @@ func readMvhdBox(f *os.File, size uint32, level int, boxPath string, mp4 map[str
 	copy(mvhd.Reserved[:], data[1:4])
 	offset = 4
 	if mvhd.Version == 0 {
-		mvhd.CreationTime = uint64(binary.BigEndian.Uint32(data[offset:offset+4]))
+		mvhd.CreationTime = uint64(binary.BigEndian.Uint32(data[offset : offset+4]))
 		offset += 4
-		mvhd.ModificationTime = uint64(binary.BigEndian.Uint32(data[offset:offset+4]))
+		mvhd.ModificationTime = uint64(binary.BigEndian.Uint32(data[offset : offset+4]))
 		offset += 4
 	} else {
-		mvhd.CreationTime = binary.BigEndian.Uint64(data[offset:offset+8])
+		mvhd.CreationTime = binary.BigEndian.Uint64(data[offset : offset+8])
 		offset += 8
-		mvhd.ModificationTime = binary.BigEndian.Uint64(data[offset:offset+8])
+		mvhd.ModificationTime = binary.BigEndian.Uint64(data[offset : offset+8])
 		offset += 8
 	}
-	mvhd.Timescale = binary.BigEndian.Uint32(data[offset:offset+4])
+	mvhd.Timescale = binary.BigEndian.Uint32(data[offset : offset+4])
 	offset += 4
 	if mvhd.Version == 0 {
-		mvhd.Duration = uint64(binary.BigEndian.Uint32(data[offset:offset+4]))
+		mvhd.Duration = uint64(binary.BigEndian.Uint32(data[offset : offset+4]))
 		offset += 4
 	} else {
-		mvhd.Duration = binary.BigEndian.Uint64(data[offset:offset+8])
+		mvhd.Duration = binary.BigEndian.Uint64(data[offset : offset+8])
 		offset += 8
 	}
-	mvhd.Rate = int32(binary.BigEndian.Uint32(data[offset:offset+4]))
+	mvhd.Rate = int32(binary.BigEndian.Uint32(data[offset : offset+4]))
 	offset += 4
-	mvhd.Volume = int16(binary.BigEndian.Uint16(data[offset:offset+2]))
+	mvhd.Volume = int16(binary.BigEndian.Uint16(data[offset : offset+2]))
 	offset += 2
-	mvhd.Reserved2 = binary.BigEndian.Uint16(data[offset:offset+2])
+	mvhd.Reserved2 = binary.BigEndian.Uint16(data[offset : offset+2])
 	offset += 2
-	mvhd.Reserved3 = binary.BigEndian.Uint64(data[offset:offset+8])
+	mvhd.Reserved3 = binary.BigEndian.Uint64(data[offset : offset+8])
 	offset += 8
 	for i := 0; i < 9; i++ {
-		mvhd.Matrix[i] = int32(binary.BigEndian.Uint32(data[offset:offset+4]))
+		mvhd.Matrix[i] = int32(binary.BigEndian.Uint32(data[offset : offset+4]))
 		offset += 4
 	}
 	for i := 0; i < 6; i++ {
-		mvhd.PreDefined[i] = binary.BigEndian.Uint32(data[offset:offset+4])
+		mvhd.PreDefined[i] = binary.BigEndian.Uint32(data[offset : offset+4])
 		offset += 4
 	}
-	mvhd.NextTrackID = binary.BigEndian.Uint32(data[offset:offset+4])
+	mvhd.NextTrackID = binary.BigEndian.Uint32(data[offset : offset+4])
 	addBox(mp4, boxPath, mvhd)
 	dumpBox(boxPath, mvhd)
 }
@@ -1146,7 +1146,7 @@ func (mvhd MvhdBox) Bytes() (data []byte) {
 	boxSize := mvhd.Size + 8
 	data = make([]byte, boxSize)
 	binary.BigEndian.PutUint32(data[0:4], boxSize)
-	copy(data[4:8], []byte{ 'm', 'v', 'h', 'd' })
+	copy(data[4:8], []byte{'m', 'v', 'h', 'd'})
 	data[8] = mvhd.Version
 	copy(data[9:12], mvhd.Reserved[:])
 	offset = 12
@@ -1207,7 +1207,7 @@ func readStsdBox(f *os.File, size uint32, level int, boxPath string, mp4 map[str
 	addBox(mp4, boxPath, stsd)
 	dumpBox(boxPath, stsd)
 
-	readBoxes(f, size - 8, level + 1, boxPath, mp4)
+	readBoxes(f, size-8, level+1, boxPath, mp4)
 
 	return
 }
@@ -1217,7 +1217,7 @@ func (stsd StsdBox) Bytes() (data []byte) {
 	data = make([]byte, 16)
 
 	binary.BigEndian.PutUint32(data[0:4], boxSize)
-	copy(data[4:8], []byte{ 's', 't', 's', 'd' })
+	copy(data[4:8], []byte{'s', 't', 's', 'd'})
 	data[8] = stsd.Version
 	copy(data[9:12], stsd.Reserved[:])
 	binary.BigEndian.PutUint32(data[12:16], stsd.EntryCount)
@@ -1248,7 +1248,7 @@ func readMp4aBox(f *os.File, size uint32, level int, boxPath string, mp4 map[str
 	addBox(mp4, boxPath, mp4a)
 	dumpBox(boxPath, mp4a)
 
-	readBoxes(f, size - 28, level + 1, boxPath, mp4)
+	readBoxes(f, size-28, level+1, boxPath, mp4)
 
 	return
 }
@@ -1258,7 +1258,7 @@ func (mp4a Mp4aBox) Bytes() (data []byte) {
 	data = make([]byte, 36)
 
 	binary.BigEndian.PutUint32(data[0:4], boxSize)
-	copy(data[4:8], []byte{ 'm', 'p', '4', 'a' })
+	copy(data[4:8], []byte{'m', 'p', '4', 'a'})
 	copy(data[8:14], mp4a.Reserved[0:6])
 	binary.BigEndian.PutUint16(data[14:16], mp4a.DataReferenceIndex)
 	binary.BigEndian.PutUint16(data[16:18], mp4a.Version)
@@ -1296,7 +1296,7 @@ func (esds EsdsBox) Bytes() (data []byte) {
 	data = make([]byte, boxSize)
 
 	binary.BigEndian.PutUint32(data[0:4], boxSize)
-	copy(data[4:8], []byte{ 'e', 's', 'd', 's' })
+	copy(data[4:8], []byte{'e', 's', 'd', 's'})
 	binary.BigEndian.PutUint32(data[8:12], esds.Version)
 	copy(data[12:], esds.Data[:])
 
@@ -1332,7 +1332,7 @@ func readAvc1Box(f *os.File, size uint32, level int, boxPath string, mp4 map[str
 	addBox(mp4, boxPath, avc1)
 	dumpBox(boxPath, avc1)
 
-	readBoxes(f, size - 78, level + 1, boxPath, mp4)
+	readBoxes(f, size-78, level+1, boxPath, mp4)
 
 	return
 }
@@ -1342,7 +1342,7 @@ func (avc1 Avc1Box) Bytes() (data []byte) {
 	data = make([]byte, 86)
 
 	binary.BigEndian.PutUint32(data[0:4], boxSize)
-	copy(data[4:8], []byte{ 'a', 'v', 'c', '1' })
+	copy(data[4:8], []byte{'a', 'v', 'c', '1'})
 	copy(data[8:14], avc1.Reserved[0:6])
 	binary.BigEndian.PutUint16(data[14:16], avc1.dataReferenceIndex)
 	binary.BigEndian.PutUint16(data[16:18], avc1.Version)
@@ -1381,13 +1381,13 @@ func readAvcCBox(f *os.File, size uint32, level int, boxPath string, mp4 map[str
 	avcC.SPSEntryCount = data[5] - 0xe0
 	avcC.SPSSize = binary.BigEndian.Uint16(data[6:8])
 	offset = 8
-	avcC.SPSData = data[offset:offset+(uint32(avcC.SPSSize)*uint32(avcC.SPSEntryCount))]
-	offset += uint32(avcC.SPSSize)*uint32(avcC.SPSEntryCount)
+	avcC.SPSData = data[offset : offset+(uint32(avcC.SPSSize)*uint32(avcC.SPSEntryCount))]
+	offset += uint32(avcC.SPSSize) * uint32(avcC.SPSEntryCount)
 	avcC.PPSEntryCount = data[offset]
 	offset++
-	avcC.PPSSize = binary.BigEndian.Uint16(data[offset:offset+2])
+	avcC.PPSSize = binary.BigEndian.Uint16(data[offset : offset+2])
 	offset += 2
-	avcC.PPSData = data[offset:offset+(uint32(avcC.PPSSize)*uint32(avcC.PPSEntryCount))]
+	avcC.PPSData = data[offset : offset+(uint32(avcC.PPSSize)*uint32(avcC.PPSEntryCount))]
 
 	addBox(mp4, boxPath, avcC)
 	dumpBox(boxPath, avcC)
@@ -1401,7 +1401,7 @@ func (avcC AvcCBox) Bytes() (data []byte) {
 	data = make([]byte, boxSize)
 
 	binary.BigEndian.PutUint32(data[0:4], boxSize)
-	copy(data[4:8], []byte{ 'a', 'v', 'c', 'C' })
+	copy(data[4:8], []byte{'a', 'v', 'c', 'C'})
 	data[8] = avcC.ConfigurationVersion
 	data[9] = avcC.AVCProfileIndication
 	data[10] = avcC.ProfileCompatibility
@@ -1411,7 +1411,7 @@ func (avcC AvcCBox) Bytes() (data []byte) {
 	binary.BigEndian.PutUint16(data[14:16], avcC.SPSSize)
 	offset = 16
 	copy(data[offset:offset+(uint32(avcC.SPSSize)*uint32(avcC.SPSEntryCount))], avcC.SPSData[0:uint32(avcC.SPSEntryCount)*uint32(avcC.SPSSize)])
-	offset += uint32(avcC.SPSSize)*uint32(avcC.SPSEntryCount)
+	offset += uint32(avcC.SPSSize) * uint32(avcC.SPSEntryCount)
 	data[offset] = avcC.PPSEntryCount
 	offset++
 	binary.BigEndian.PutUint16(data[offset:offset+2], avcC.PPSSize)
@@ -1445,7 +1445,7 @@ func (btrt BtrtBox) Bytes() (data []byte) {
 	data = make([]byte, boxSize)
 
 	binary.BigEndian.PutUint32(data[0:4], boxSize)
-	copy(data[4:8], []byte{ 'b', 't', 'r', 't' })
+	copy(data[4:8], []byte{'b', 't', 'r', 't'})
 	binary.BigEndian.PutUint32(data[8:12], btrt.DecodingBufferSize)
 	binary.BigEndian.PutUint32(data[12:16], btrt.MaxBitrate)
 	binary.BigEndian.PutUint32(data[16:20], btrt.AvgBitrate)
@@ -1468,9 +1468,9 @@ func readStscBox(f *os.File, size uint32, level int, boxPath string, mp4 map[str
 	stsc.Entries = make([]StscEntry, stsc.EntryCount)
 	var i uint32
 	for i = 0; i < stsc.EntryCount; i++ {
-		stsc.Entries[i].FirstChunk = binary.BigEndian.Uint32(data[8+(i*12):12+(i*12)])
-		stsc.Entries[i].SamplesPerChunk = binary.BigEndian.Uint32(data[12+(i*12):16+(i*12)])
-		stsc.Entries[i].SampleDescriptionIndex = binary.BigEndian.Uint32(data[16+(i*12):20+(i*12)])
+		stsc.Entries[i].FirstChunk = binary.BigEndian.Uint32(data[8+(i*12) : 12+(i*12)])
+		stsc.Entries[i].SamplesPerChunk = binary.BigEndian.Uint32(data[12+(i*12) : 16+(i*12)])
+		stsc.Entries[i].SampleDescriptionIndex = binary.BigEndian.Uint32(data[16+(i*12) : 20+(i*12)])
 	}
 	addBox(mp4, boxPath, stsc)
 	dumpBox(boxPath, stsc)
@@ -1482,7 +1482,7 @@ func (stsc StscBox) Bytes() (data []byte) {
 	data = make([]byte, boxSize)
 
 	binary.BigEndian.PutUint32(data[0:4], boxSize)
-	copy(data[4:8], []byte{ 's', 't', 's', 'c' })
+	copy(data[4:8], []byte{'s', 't', 's', 'c'})
 	data[8] = stsc.Version
 	copy(data[9:12], stsc.Flags[:])
 	binary.BigEndian.PutUint32(data[12:16], stsc.EntryCount)
@@ -1521,7 +1521,7 @@ func readStszBox(f *os.File, size uint32, level int, boxPath string, mp4 map[str
 		stsz.EntrySize = make([]uint32, stsz.SampleCount)
 		var i uint32
 		for i = 0; i < stsz.SampleCount; i++ {
-			stsz.EntrySize[i] = binary.BigEndian.Uint32(data[12+(i*4):16+(i*4)])
+			stsz.EntrySize[i] = binary.BigEndian.Uint32(data[12+(i*4) : 16+(i*4)])
 		}
 	}
 	addBox(mp4, boxPath, stsz)
@@ -1534,7 +1534,7 @@ func (stsz StszBox) Bytes() (data []byte) {
 	data = make([]byte, boxSize)
 
 	binary.BigEndian.PutUint32(data[0:4], boxSize)
-	copy(data[4:8], []byte{ 's', 't', 's', 'z' })
+	copy(data[4:8], []byte{'s', 't', 's', 'z'})
 	data[8] = stsz.Version
 	copy(data[9:12], stsz.Reserved[:])
 	binary.BigEndian.PutUint32(data[12:16], stsz.SampleSize)
@@ -1585,7 +1585,7 @@ func (sdtp SdtpBox) Bytes() (data []byte) {
 	data = make([]byte, boxSize)
 
 	binary.BigEndian.PutUint32(data[0:4], boxSize)
-	copy(data[4:8], []byte{ 's', 'd', 't', 'p' })
+	copy(data[4:8], []byte{'s', 'd', 't', 'p'})
 	data[8] = sdtp.Version
 	var i uint32
 	for i = 0; i < sdtp.SampleCount; i++ {
@@ -1610,7 +1610,7 @@ func readStcoBox(f *os.File, size uint32, level int, boxPath string, mp4 map[str
 		stco.ChunkOffset = make([]uint32, stco.EntryCount)
 		var i uint32
 		for i = 0; i < stco.EntryCount; i++ {
-			stco.ChunkOffset[i] = binary.BigEndian.Uint32(data[8+(i*4):12+(i*4)])
+			stco.ChunkOffset[i] = binary.BigEndian.Uint32(data[8+(i*4) : 12+(i*4)])
 		}
 	}
 	addBox(mp4, boxPath, stco)
@@ -1623,7 +1623,7 @@ func (stco StcoBox) Bytes() (data []byte) {
 	data = make([]byte, boxSize)
 
 	binary.BigEndian.PutUint32(data[0:4], boxSize)
-	copy(data[4:8], []byte{ 's', 't', 'c', 'o' })
+	copy(data[4:8], []byte{'s', 't', 'c', 'o'})
 	data[8] = stco.Version
 	copy(data[9:12], stco.Reserved[:])
 	binary.BigEndian.PutUint32(data[12:16], stco.EntryCount)
@@ -1639,7 +1639,7 @@ func (stco StcoBox) Bytes() (data []byte) {
 }
 
 func readSttsBox(f *os.File, size uint32, level int, boxPath string, mp4 map[string][]interface{}) {
-	data := make ([]byte, size)
+	data := make([]byte, size)
 	_, err := f.Read(data)
 	if err != nil {
 		panic(err)
@@ -1653,8 +1653,8 @@ func readSttsBox(f *os.File, size uint32, level int, boxPath string, mp4 map[str
 	stts.Entries = make([]SttsBoxEntry, stts.EntryCount)
 	var i uint32
 	for i = 0; i < stts.EntryCount; i++ {
-		stts.Entries[i].SampleCount = binary.BigEndian.Uint32(data[8+(i*8):12+(i*8)])
-		stts.Entries[i].SampleDelta = binary.BigEndian.Uint32(data[12+(i*8):16+(i*8)])
+		stts.Entries[i].SampleCount = binary.BigEndian.Uint32(data[8+(i*8) : 12+(i*8)])
+		stts.Entries[i].SampleDelta = binary.BigEndian.Uint32(data[12+(i*8) : 16+(i*8)])
 	}
 	addBox(mp4, boxPath, stts)
 	dumpBox(boxPath, stts)
@@ -1666,7 +1666,7 @@ func (stts SttsBox) Bytes() (data []byte) {
 	data = make([]byte, boxSize)
 
 	binary.BigEndian.PutUint32(data[0:4], boxSize)
-	copy(data[4:8], []byte{ 's', 't', 't', 's' })
+	copy(data[4:8], []byte{'s', 't', 't', 's'})
 	data[8] = stts.Version
 	copy(data[9:12], stts.Reserved[:])
 	binary.BigEndian.PutUint32(data[12:16], stts.EntryCount)
@@ -1684,7 +1684,7 @@ func (stts SttsBox) Bytes() (data []byte) {
 func readCttsBox(f *os.File, size uint32, level int, boxPath string, mp4 map[string][]interface{}) {
 	var ctts CttsBox
 	ctts.Offset, _ = f.Seek(0, os.SEEK_CUR)
-	data := make ([]byte, size)
+	data := make([]byte, size)
 	_, err := f.Read(data)
 	if err != nil {
 		panic(err)
@@ -1697,8 +1697,8 @@ func readCttsBox(f *os.File, size uint32, level int, boxPath string, mp4 map[str
 	ctts.Entries = make([]CttsBoxEntry, ctts.EntryCount)
 	var i uint32
 	for i = 0; i < ctts.EntryCount; i++ {
-		ctts.Entries[i].SampleCount = binary.BigEndian.Uint32(data[8+(i*8):12+(i*8)])
-		ctts.Entries[i].SampleOffset = binary.BigEndian.Uint32(data[12+(i*8):16+(i*8)])
+		ctts.Entries[i].SampleCount = binary.BigEndian.Uint32(data[8+(i*8) : 12+(i*8)])
+		ctts.Entries[i].SampleOffset = binary.BigEndian.Uint32(data[12+(i*8) : 16+(i*8)])
 	}
 	addBox(mp4, boxPath, ctts)
 	dumpBox(boxPath, ctts)
@@ -1710,7 +1710,7 @@ func (ctts CttsBox) Bytes() (data []byte) {
 	data = make([]byte, boxSize)
 
 	binary.BigEndian.PutUint32(data[0:4], boxSize)
-	copy(data[4:8], []byte{ 'c', 't', 't', 's' })
+	copy(data[4:8], []byte{'c', 't', 't', 's'})
 	data[8] = ctts.Version
 	copy(data[9:12], ctts.Reserved[:])
 	binary.BigEndian.PutUint32(data[12:16], ctts.EntryCount)
@@ -1728,7 +1728,7 @@ func (ctts CttsBox) Bytes() (data []byte) {
 func readStssBox(f *os.File, size uint32, level int, boxPath string, mp4 map[string][]interface{}) {
 	var stss StssBox
 	stss.Offset, _ = f.Seek(0, os.SEEK_CUR)
-	data := make ([]byte, size)
+	data := make([]byte, size)
 	_, err := f.Read(data)
 	if err != nil {
 		panic(err)
@@ -1745,7 +1745,7 @@ func readStssBox(f *os.File, size uint32, level int, boxPath string, mp4 map[str
 	}
 	var i uint32
 	for i = 0; i < stss.EntryCount; i++ {
-		stss.SampleNumber[i] = binary.BigEndian.Uint32(data[8+(i*4):12+(i*4)])
+		stss.SampleNumber[i] = binary.BigEndian.Uint32(data[8+(i*4) : 12+(i*4)])
 	}
 	addBox(mp4, boxPath, stss)
 	dumpBox(boxPath, stss)
@@ -1756,7 +1756,7 @@ func (stss StssBox) Bytes() (data []byte) {
 	data = make([]byte, boxSize)
 
 	binary.BigEndian.PutUint32(data[0:4], boxSize)
-	copy(data[4:8], []byte{ 's', 't', 's', 's' })
+	copy(data[4:8], []byte{'s', 't', 's', 's'})
 	data[8] = stss.Version
 	copy(data[9:12], stss.Reserved[:])
 	binary.BigEndian.PutUint32(data[12:16], stss.EntryCount)
@@ -1791,9 +1791,9 @@ func readMehdBox(f *os.File, size uint32, level int, boxPath string, mp4 map[str
 	copy(mehd.Reserved[:], data[1:4])
 	offset = 4
 	if mehd.Version == 0 {
-		mehd.FragmentDuration = uint64(binary.BigEndian.Uint32(data[offset:offset+4]))
+		mehd.FragmentDuration = uint64(binary.BigEndian.Uint32(data[offset : offset+4]))
 	} else {
-		mehd.FragmentDuration = binary.BigEndian.Uint64(data[offset:offset+8])
+		mehd.FragmentDuration = binary.BigEndian.Uint64(data[offset : offset+8])
 	}
 	addBox(mp4, boxPath, mehd)
 	dumpBox(boxPath, mehd)
@@ -1805,7 +1805,7 @@ func (mehd MehdBox) Bytes() (data []byte) {
 	data = make([]byte, boxSize)
 
 	binary.BigEndian.PutUint32(data[0:4], boxSize)
-	copy(data[4:8], []byte{ 'm', 'e', 'h', 'd' })
+	copy(data[4:8], []byte{'m', 'e', 'h', 'd'})
 	data[8] = mehd.Version
 	copy(data[9:12], mehd.Reserved[:])
 	offset = 12
@@ -1842,7 +1842,7 @@ func (trex TrexBox) Bytes() (data []byte) {
 	data = make([]byte, boxSize)
 
 	binary.BigEndian.PutUint32(data[0:4], boxSize)
-	copy(data[4:8], []byte{ 't', 'r', 'e', 'x' })
+	copy(data[4:8], []byte{'t', 'r', 'e', 'x'})
 	data[8] = trex.Version
 	copy(data[9:12], trex.Reserved[:])
 	binary.BigEndian.PutUint32(data[12:16], trex.TrackID)
@@ -1874,7 +1874,7 @@ func (mfhd MfhdBox) Bytes() (data []byte) {
 	data = make([]byte, boxSize)
 
 	binary.BigEndian.PutUint32(data[0:4], boxSize)
-	copy(data[4:8], []byte{ 'm', 'f', 'h', 'd' })
+	copy(data[4:8], []byte{'m', 'f', 'h', 'd'})
 	data[8] = mfhd.Version
 	copy(data[9:12], mfhd.Reserved[:])
 	binary.BigEndian.PutUint32(data[12:16], mfhd.SequenceNumber)
@@ -1894,24 +1894,24 @@ func readTfhdBox(f *os.File, size uint32, level int, boxPath string, mp4 map[str
 	copy(tfhd.Flags[:], data[1:4])
 	tfhd.TrackID = binary.BigEndian.Uint32(data[4:8])
 	dataOffset := 8
-	if tfhd.Flags[2] & 0x01 != 0 {
-		tfhd.BaseDataOffset = binary.BigEndian.Uint64(data[dataOffset:dataOffset+8])
+	if tfhd.Flags[2]&0x01 != 0 {
+		tfhd.BaseDataOffset = binary.BigEndian.Uint64(data[dataOffset : dataOffset+8])
 		dataOffset += 8
 	}
-	if tfhd.Flags[2] & 0x02 != 0 {
-		tfhd.SampleDescriptionIndex = binary.BigEndian.Uint32(data[dataOffset:dataOffset+4])
+	if tfhd.Flags[2]&0x02 != 0 {
+		tfhd.SampleDescriptionIndex = binary.BigEndian.Uint32(data[dataOffset : dataOffset+4])
 		dataOffset += 4
 	}
-	if tfhd.Flags[2] & 0x08 != 0 {
-		tfhd.DefaultSampleDuration = binary.BigEndian.Uint32(data[dataOffset:dataOffset+4])
+	if tfhd.Flags[2]&0x08 != 0 {
+		tfhd.DefaultSampleDuration = binary.BigEndian.Uint32(data[dataOffset : dataOffset+4])
 		dataOffset += 4
 	}
-	if tfhd.Flags[2] & 0x10 != 0 {
-		tfhd.DefaultSampleSize = binary.BigEndian.Uint32(data[dataOffset:dataOffset+4])
+	if tfhd.Flags[2]&0x10 != 0 {
+		tfhd.DefaultSampleSize = binary.BigEndian.Uint32(data[dataOffset : dataOffset+4])
 		dataOffset += 4
 	}
-	if tfhd.Flags[2] & 0x20 != 0 {
-		tfhd.DefaultSampleFlags = binary.BigEndian.Uint32(data[dataOffset:dataOffset+4])
+	if tfhd.Flags[2]&0x20 != 0 {
+		tfhd.DefaultSampleFlags = binary.BigEndian.Uint32(data[dataOffset : dataOffset+4])
 		dataOffset += 4
 	}
 	addBox(mp4, boxPath, tfhd)
@@ -1923,28 +1923,28 @@ func (tfhd TfhdBox) Bytes() (data []byte) {
 	data = make([]byte, boxSize)
 
 	binary.BigEndian.PutUint32(data[0:4], boxSize)
-	copy(data[4:8], []byte{ 't', 'f', 'h', 'd' })
+	copy(data[4:8], []byte{'t', 'f', 'h', 'd'})
 	data[8] = tfhd.Version
 	copy(data[9:12], tfhd.Flags[:])
 	binary.BigEndian.PutUint32(data[12:16], tfhd.TrackID)
 	dataOffset := 16
-	if tfhd.Flags[2] & 0x01 != 0 {
+	if tfhd.Flags[2]&0x01 != 0 {
 		binary.BigEndian.PutUint64(data[dataOffset:dataOffset+8], tfhd.BaseDataOffset)
 		dataOffset += 8
 	}
-	if tfhd.Flags[2] & 0x02 != 0 {
+	if tfhd.Flags[2]&0x02 != 0 {
 		binary.BigEndian.PutUint32(data[dataOffset:dataOffset+4], tfhd.SampleDescriptionIndex)
 		dataOffset += 4
 	}
-	if tfhd.Flags[2] & 0x08 != 0 {
+	if tfhd.Flags[2]&0x08 != 0 {
 		binary.BigEndian.PutUint32(data[dataOffset:dataOffset+4], tfhd.DefaultSampleDuration)
 		dataOffset += 4
 	}
-	if tfhd.Flags[2] & 0x10 != 0 {
+	if tfhd.Flags[2]&0x10 != 0 {
 		binary.BigEndian.PutUint32(data[dataOffset:dataOffset+4], tfhd.DefaultSampleSize)
 		dataOffset += 4
 	}
-	if tfhd.Flags[2] & 0x20 != 0 {
+	if tfhd.Flags[2]&0x20 != 0 {
 		binary.BigEndian.PutUint32(data[dataOffset:dataOffset+4], tfhd.DefaultSampleFlags)
 		dataOffset += 4
 	}
@@ -1964,35 +1964,35 @@ func readTrunBox(f *os.File, size uint32, level int, boxPath string, mp4 map[str
 	trun.SampleCount = binary.BigEndian.Uint32(data[4:8])
 	var dataOffset uint32
 	dataOffset = 8
-	if trun.Flags[2] & 0x01 != 0 {
-		trun.DataOffset = int32(binary.BigEndian.Uint32(data[dataOffset:dataOffset+4]))
+	if trun.Flags[2]&0x01 != 0 {
+		trun.DataOffset = int32(binary.BigEndian.Uint32(data[dataOffset : dataOffset+4]))
 		dataOffset += 4
 	}
-	if trun.Flags[2] & 0x04 != 0 {
-		trun.FirstSampleFlags = binary.BigEndian.Uint32(data[dataOffset:dataOffset+4])
+	if trun.Flags[2]&0x04 != 0 {
+		trun.FirstSampleFlags = binary.BigEndian.Uint32(data[dataOffset : dataOffset+4])
 		dataOffset += 4
 	}
 	if trun.Flags[1] != 0 {
 		trun.Samples = make([]TrunBoxSample, trun.SampleCount)
 		var i uint32
 		for i = 0; i < trun.SampleCount; i++ {
-			if trun.Flags[1] & 0x01 != 0 {
-				trun.Samples[i].Duration = binary.BigEndian.Uint32(data[dataOffset:dataOffset+4])
+			if trun.Flags[1]&0x01 != 0 {
+				trun.Samples[i].Duration = binary.BigEndian.Uint32(data[dataOffset : dataOffset+4])
 				dataOffset += 4
 			}
-			if trun.Flags[1] & 0x02 != 0 {
-				trun.Samples[i].Size = binary.BigEndian.Uint32(data[dataOffset:dataOffset+4])
+			if trun.Flags[1]&0x02 != 0 {
+				trun.Samples[i].Size = binary.BigEndian.Uint32(data[dataOffset : dataOffset+4])
 				dataOffset += 4
 			}
-			if trun.Flags[1] & 0x04 != 0 {
-				trun.Samples[i].Flags = binary.BigEndian.Uint32(data[dataOffset:dataOffset+4])
+			if trun.Flags[1]&0x04 != 0 {
+				trun.Samples[i].Flags = binary.BigEndian.Uint32(data[dataOffset : dataOffset+4])
 				dataOffset += 4
 			}
-			if trun.Flags[1] & 0x08 != 0 {
-				if (trun.Version == 0) {
-					trun.Samples[i].CompositionTimeOffset = int64(binary.BigEndian.Uint32(data[dataOffset:dataOffset+4]))
+			if trun.Flags[1]&0x08 != 0 {
+				if trun.Version == 0 {
+					trun.Samples[i].CompositionTimeOffset = int64(binary.BigEndian.Uint32(data[dataOffset : dataOffset+4]))
 				} else {
-					trun.Samples[i].CompositionTimeOffset = int64(int32(binary.BigEndian.Uint32(data[dataOffset:dataOffset+4])))
+					trun.Samples[i].CompositionTimeOffset = int64(int32(binary.BigEndian.Uint32(data[dataOffset : dataOffset+4])))
 				}
 				dataOffset += 4
 			}
@@ -2007,35 +2007,35 @@ func (trun TrunBox) Bytes() (data []byte) {
 	data = make([]byte, boxSize)
 
 	binary.BigEndian.PutUint32(data[0:4], boxSize)
-	copy(data[4:8], []byte{ 't', 'r', 'u', 'n' })
+	copy(data[4:8], []byte{'t', 'r', 'u', 'n'})
 	data[8] = trun.Version
 	copy(data[9:12], trun.Flags[:])
 	binary.BigEndian.PutUint32(data[12:16], trun.SampleCount)
 	dataOffset := 16
-	if trun.Flags[2] & 0x01 != 0 {
+	if trun.Flags[2]&0x01 != 0 {
 		binary.BigEndian.PutUint32(data[dataOffset:dataOffset+4], uint32(trun.DataOffset))
 		dataOffset += 4
 	}
-	if trun.Flags[2] & 0x04 != 0 {
+	if trun.Flags[2]&0x04 != 0 {
 		binary.BigEndian.PutUint32(data[dataOffset:dataOffset+4], trun.FirstSampleFlags)
 		dataOffset += 4
 	}
 	if trun.Flags[1] != 0 {
 		var i uint32
 		for i = 0; i < trun.SampleCount; i++ {
-			if trun.Flags[1] & 0x01 != 0 {
+			if trun.Flags[1]&0x01 != 0 {
 				binary.BigEndian.PutUint32(data[dataOffset:dataOffset+4], trun.Samples[i].Duration)
 				dataOffset += 4
 			}
-			if trun.Flags[1] & 0x02 != 0 {
+			if trun.Flags[1]&0x02 != 0 {
 				binary.BigEndian.PutUint32(data[dataOffset:dataOffset+4], trun.Samples[i].Size)
 				dataOffset += 4
 			}
-			if trun.Flags[1] & 0x04 != 0 {
+			if trun.Flags[1]&0x04 != 0 {
 				binary.BigEndian.PutUint32(data[dataOffset:dataOffset+4], trun.Samples[i].Flags)
 				dataOffset += 4
 			}
-			if trun.Flags[1] & 0x08 != 0 {
+			if trun.Flags[1]&0x08 != 0 {
 				binary.BigEndian.PutUint32(data[dataOffset:dataOffset+4], uint32(trun.Samples[i].CompositionTimeOffset))
 				dataOffset += 4
 			}
@@ -2064,9 +2064,9 @@ func readTfdtBox(f *os.File, size uint32, level int, boxPath string, mp4 map[str
 	copy(tfdt.Reserved[:], data[1:4])
 	offset = 4
 	if tfdt.Version == 0 {
-		tfdt.BaseMediaDecodeTime = uint64(binary.BigEndian.Uint32(data[offset:offset+4]))
+		tfdt.BaseMediaDecodeTime = uint64(binary.BigEndian.Uint32(data[offset : offset+4]))
 	} else {
-		tfdt.BaseMediaDecodeTime = binary.BigEndian.Uint64(data[offset:offset+8])
+		tfdt.BaseMediaDecodeTime = binary.BigEndian.Uint64(data[offset : offset+8])
 	}
 	addBox(mp4, boxPath, tfdt)
 	dumpBox(boxPath, tfdt)
@@ -2077,7 +2077,7 @@ func (tfdt TfdtBox) Bytes() (data []byte) {
 	data = make([]byte, boxSize)
 
 	binary.BigEndian.PutUint32(data[0:4], boxSize)
-	copy(data[4:8], []byte{ 't', 'f', 'd', 't' })
+	copy(data[4:8], []byte{'t', 'f', 'd', 't'})
 	data[8] = tfdt.Version
 	copy(data[9:12], tfdt.Reserved[:])
 	dataOffset := 12
@@ -2110,7 +2110,7 @@ func (frma FrmaBox) Bytes() (data []byte) {
 	data = make([]byte, boxSize)
 
 	binary.BigEndian.PutUint32(data[0:4], boxSize)
-	copy(data[4:8], []byte{ 'f', 'r', 'm', 'a' })
+	copy(data[4:8], []byte{'f', 'r', 'm', 'a'})
 	copy(data[8:12], frma.DataFormat[:])
 
 	return
@@ -2140,7 +2140,7 @@ func (schm SchmBox) Bytes() (data []byte) {
 	data = make([]byte, boxSize)
 
 	binary.BigEndian.PutUint32(data[0:4], boxSize)
-	copy(data[4:8], []byte{ 's', 'c', 'h', 'm' })
+	copy(data[4:8], []byte{'s', 'c', 'h', 'm'})
 	data[8] = schm.Version
 	copy(data[9:12], schm.Flags[0:3])
 	copy(data[12:16], schm.SchemeType[0:4])
@@ -2176,7 +2176,7 @@ func (mdat MdatBox) Bytes() (data []byte) {
 	boxSize := mdat.Size + 8
 	data = make([]byte, boxSize)
 	binary.BigEndian.PutUint32(data[0:4], boxSize)
-	copy(data[4:8], []byte{ 'm', 'd', 'a', 't' })
+	copy(data[4:8], []byte{'m', 'd', 'a', 't'})
 	f, err := os.Open(mdat.Filename)
 	if err != nil {
 		panic(err)
@@ -2231,13 +2231,13 @@ func readBoxes(f *os.File, size uint32, level int, boxPath string, mp4 map[strin
 			}
 			var callFunc func(*os.File, uint32, int, string, map[string][]interface{})
 			callFunc = funcBoxes[boxFullPath].(func(*os.File, uint32, int, string, map[string][]interface{}))
-			callFunc(f, boxSize - 8, level + 1, boxFullPath, mp4)
+			callFunc(f, boxSize-8, level+1, boxFullPath, mp4)
 		} else {
 			// Skip box because we don't know how to decode it
 			if debugMode {
 				log.Printf("ERROR: Unknown %s box", boxPath)
 			}
-			f.Seek(int64(boxSize - 8), 1)
+			f.Seek(int64(boxSize-8), 1)
 		}
 
 		offset += boxSize
@@ -2306,175 +2306,175 @@ func ParseFile(filename string, language string) (mp4 Mp4) {
 	return
 }
 
-func boxToBytes(box interface{}, boxFullPath string) ([]byte) {
+func boxToBytes(box interface{}, boxFullPath string) []byte {
 	boxNames := strings.Split(boxFullPath, ".")
 	boxName := boxNames[len(boxNames)-1]
 	switch boxName {
-		case "ftyp":
-			ftyp := box.(FtypBox)
-			return ftyp.Bytes()
-		case "free":
-			free := box.(FreeBox)
-			return free.Bytes()
-		case "moov":
-			moov := box.(ParentBox)
-			return moov.Bytes()
-		case "mvhd":
-			mvhd := box.(MvhdBox)
-			return mvhd.Bytes()
-		case "trak":
-			trak := box.(ParentBox)
-			return trak.Bytes()
-		case "tkhd":
-			tkhd := box.(TkhdBox)
-			return tkhd.Bytes()
-		case "mdia":
-			mdia := box.(ParentBox)
-			return mdia.Bytes()
-		case "mdhd":
-			mdhd := box.(MdhdBox)
-			return mdhd.Bytes()
-		case "hdlr":
-			hdlr := box.(HdlrBox)
-			return hdlr.Bytes()
-		case "minf":
-			minf := box.(ParentBox)
-			return minf.Bytes()
-		case "smhd":
-			smhd := box.(SmhdBox)
-			return smhd.Bytes()
-		case "vmhd":
-			vmhd := box.(VmhdBox)
-			return vmhd.Bytes()
-		case "dinf":
-			dinf := box.(ParentBox)
-			return dinf.Bytes()
-		case "dref":
-			dref := box.(DrefBox)
-			return dref.Bytes()
-		case "stbl":
-			stbl := box.(ParentBox)
-			return stbl.Bytes()
-		case "stsd":
-			stsd := box.(StsdBox)
-			return stsd.Bytes()
-		case "mp4a":
-			mp4a := box.(Mp4aBox)
-			return mp4a.Bytes()
-		case "esds":
-			esds := box.(EsdsBox)
-			return esds.Bytes()
-		case "avc1":
-			avc1 := box.(Avc1Box)
-			return avc1.Bytes()
-		case "avcC":
-			avcC := box.(AvcCBox)
-			return avcC.Bytes()
-		case "btrt":
-			btrt := box.(BtrtBox)
-			return btrt.Bytes()
-		case "stts":
-			stts := box.(SttsBox)
-			return stts.Bytes()
-		case "ctts":
-			ctts := box.(CttsBox)
-			return ctts.Bytes()
-		case "stsc":
-			stsc := box.(StscBox)
-			return stsc.Bytes()
-		case "stsz":
-			stsz := box.(StszBox)
-			return stsz.Bytes()
-		case "sdtp":
-			sdtp := box.(SdtpBox)
-			return sdtp.Bytes()
-		case "stco":
-			stco := box.(StcoBox)
-			return stco.Bytes()
-		case "stss":
-			stss := box.(StssBox)
-			return stss.Bytes()
-		case "mvex":
-			mvex := box.(ParentBox)
-			return mvex.Bytes()
-		case "mehd":
-			mehd := box.(MehdBox)
-			return mehd.Bytes()
-		case "trex":
-			trex := box.(TrexBox)
-			return trex.Bytes()
-		case "styp":
-			styp := box.(StypBox)
-			return styp.Bytes()
-		case "moof":
-			moof := box.(ParentBox)
-			return moof.Bytes()
-		case "mfhd":
-			mfhd := box.(MfhdBox)
-			return mfhd.Bytes()
-		case "traf":
-			traf := box.(ParentBox)
-			return traf.Bytes()
-		case "tfhd":
-			tfhd := box.(TfhdBox)
-			return tfhd.Bytes()
-		case "tfdt":
-			tfdt := box.(TfdtBox)
-			return tfdt.Bytes()
-		case "trun":
-			trun := box.(TrunBox)
-			return trun.Bytes()
-		case "frma":
-			frma := box.(FrmaBox)
-			return frma.Bytes()
-		case "mdat":
-			mdat := box.(MdatBox)
-			return mdat.Bytes()
+	case "ftyp":
+		ftyp := box.(FtypBox)
+		return ftyp.Bytes()
+	case "free":
+		free := box.(FreeBox)
+		return free.Bytes()
+	case "moov":
+		moov := box.(ParentBox)
+		return moov.Bytes()
+	case "mvhd":
+		mvhd := box.(MvhdBox)
+		return mvhd.Bytes()
+	case "trak":
+		trak := box.(ParentBox)
+		return trak.Bytes()
+	case "tkhd":
+		tkhd := box.(TkhdBox)
+		return tkhd.Bytes()
+	case "mdia":
+		mdia := box.(ParentBox)
+		return mdia.Bytes()
+	case "mdhd":
+		mdhd := box.(MdhdBox)
+		return mdhd.Bytes()
+	case "hdlr":
+		hdlr := box.(HdlrBox)
+		return hdlr.Bytes()
+	case "minf":
+		minf := box.(ParentBox)
+		return minf.Bytes()
+	case "smhd":
+		smhd := box.(SmhdBox)
+		return smhd.Bytes()
+	case "vmhd":
+		vmhd := box.(VmhdBox)
+		return vmhd.Bytes()
+	case "dinf":
+		dinf := box.(ParentBox)
+		return dinf.Bytes()
+	case "dref":
+		dref := box.(DrefBox)
+		return dref.Bytes()
+	case "stbl":
+		stbl := box.(ParentBox)
+		return stbl.Bytes()
+	case "stsd":
+		stsd := box.(StsdBox)
+		return stsd.Bytes()
+	case "mp4a":
+		mp4a := box.(Mp4aBox)
+		return mp4a.Bytes()
+	case "esds":
+		esds := box.(EsdsBox)
+		return esds.Bytes()
+	case "avc1":
+		avc1 := box.(Avc1Box)
+		return avc1.Bytes()
+	case "avcC":
+		avcC := box.(AvcCBox)
+		return avcC.Bytes()
+	case "btrt":
+		btrt := box.(BtrtBox)
+		return btrt.Bytes()
+	case "stts":
+		stts := box.(SttsBox)
+		return stts.Bytes()
+	case "ctts":
+		ctts := box.(CttsBox)
+		return ctts.Bytes()
+	case "stsc":
+		stsc := box.(StscBox)
+		return stsc.Bytes()
+	case "stsz":
+		stsz := box.(StszBox)
+		return stsz.Bytes()
+	case "sdtp":
+		sdtp := box.(SdtpBox)
+		return sdtp.Bytes()
+	case "stco":
+		stco := box.(StcoBox)
+		return stco.Bytes()
+	case "stss":
+		stss := box.(StssBox)
+		return stss.Bytes()
+	case "mvex":
+		mvex := box.(ParentBox)
+		return mvex.Bytes()
+	case "mehd":
+		mehd := box.(MehdBox)
+		return mehd.Bytes()
+	case "trex":
+		trex := box.(TrexBox)
+		return trex.Bytes()
+	case "styp":
+		styp := box.(StypBox)
+		return styp.Bytes()
+	case "moof":
+		moof := box.(ParentBox)
+		return moof.Bytes()
+	case "mfhd":
+		mfhd := box.(MfhdBox)
+		return mfhd.Bytes()
+	case "traf":
+		traf := box.(ParentBox)
+		return traf.Bytes()
+	case "tfhd":
+		tfhd := box.(TfhdBox)
+		return tfhd.Bytes()
+	case "tfdt":
+		tfdt := box.(TfdtBox)
+		return tfdt.Bytes()
+	case "trun":
+		trun := box.(TrunBox)
+		return trun.Bytes()
+	case "frma":
+		frma := box.(FrmaBox)
+		return frma.Bytes()
+	case "mdat":
+		mdat := box.(MdatBox)
+		return mdat.Bytes()
 	}
 
 	return nil
 }
 
 func MapToBytes(mp4 map[string][]interface{}) (data []byte) {
-	boxPathOrder := []string {
-								"ftyp",
-								"styp",
-								"free",
-								"moof",
-								"moof.mfhd",
-								"moof.traf",
-								"moof.traf.tfhd",
-								"moof.traf.tfdt",
-								"moof.traf.trun",
-								"moov",
-								"moov.mvhd",
-								"moov.trak",
-								"moov.trak.tkhd",
-								"moov.trak.mdia",
-								"moov.trak.mdia.mdhd",
-								"moov.trak.mdia.hdlr",
-								"moov.trak.mdia.minf",
-								"moov.trak.mdia.minf.smhd",
-								"moov.trak.mdia.minf.vmhd",
-								"moov.trak.mdia.minf.dinf",
-								"moov.trak.mdia.minf.dinf.dref",
-								"moov.trak.mdia.minf.stbl",
-								"moov.trak.mdia.minf.stbl.stsd",
-								"moov.trak.mdia.minf.stbl.stsd.mp4a",
-								"moov.trak.mdia.minf.stbl.stsd.mp4a.esds",
+	boxPathOrder := []string{
+		"ftyp",
+		"styp",
+		"free",
+		"moof",
+		"moof.mfhd",
+		"moof.traf",
+		"moof.traf.tfhd",
+		"moof.traf.tfdt",
+		"moof.traf.trun",
+		"moov",
+		"moov.mvhd",
+		"moov.trak",
+		"moov.trak.tkhd",
+		"moov.trak.mdia",
+		"moov.trak.mdia.mdhd",
+		"moov.trak.mdia.hdlr",
+		"moov.trak.mdia.minf",
+		"moov.trak.mdia.minf.smhd",
+		"moov.trak.mdia.minf.vmhd",
+		"moov.trak.mdia.minf.dinf",
+		"moov.trak.mdia.minf.dinf.dref",
+		"moov.trak.mdia.minf.stbl",
+		"moov.trak.mdia.minf.stbl.stsd",
+		"moov.trak.mdia.minf.stbl.stsd.mp4a",
+		"moov.trak.mdia.minf.stbl.stsd.mp4a.esds",
 		"moov.trak.mdia.minf.stbl.stsd.avc1",
 		"moov.trak.mdia.minf.stbl.stsd.avc1.avcC",
 		"moov.trak.mdia.minf.stbl.stsd.avc1.btrt",
-								"moov.trak.mdia.minf.stbl.stts",
-								"moov.trak.mdia.minf.stbl.ctts",
-								"moov.trak.mdia.minf.stbl.stsc",
-								"moov.trak.mdia.minf.stbl.stsz",
-								"moov.trak.mdia.minf.stbl.sdtp",
-								"moov.trak.mdia.minf.stbl.stco",
-								"moov.mvex",
-								"moov.mvex.mehd",
-								"moov.mvex.trex",
-								"mdat",
+		"moov.trak.mdia.minf.stbl.stts",
+		"moov.trak.mdia.minf.stbl.ctts",
+		"moov.trak.mdia.minf.stbl.stsc",
+		"moov.trak.mdia.minf.stbl.stsz",
+		"moov.trak.mdia.minf.stbl.sdtp",
+		"moov.trak.mdia.minf.stbl.stco",
+		"moov.mvex",
+		"moov.mvex.mehd",
+		"moov.mvex.trex",
+		"mdat",
 	}
 
 	for _, v := range boxPathOrder {
@@ -2502,11 +2502,11 @@ func CreateDashInit(mp4 map[string][]interface{}) (mp4Init map[string][]interfac
 
 	// Create FTYP
 	var ftyp FtypBox
-	ftyp.MajorBrand = [4]byte{ 'i', 's', 'o', '6' }
+	ftyp.MajorBrand = [4]byte{'i', 's', 'o', '6'}
 	ftyp.MinorVersion = 0
 	ftyp.CompatibleBrands = make([][4]byte, 2)
-	ftyp.CompatibleBrands[0] = [4]byte{ 'i', 's', 'o', '6' }
-	ftyp.CompatibleBrands[1] = [4]byte{ 'd', 'a', 's', 'h' }
+	ftyp.CompatibleBrands[0] = [4]byte{'i', 's', 'o', '6'}
+	ftyp.CompatibleBrands[1] = [4]byte{'d', 'a', 's', 'h'}
 	ftyp.Size = 16
 	replaceBox(mp4Init, "ftyp", ftyp)
 
@@ -2518,7 +2518,7 @@ func CreateDashInit(mp4 map[string][]interface{}) (mp4Init map[string][]interfac
 
 	// Get and modify MVHD Box
 	var moov ParentBox
-	copy(moov.Name[:], []byte{ 'm', 'o', 'o', 'v' })
+	copy(moov.Name[:], []byte{'m', 'o', 'o', 'v'})
 	if mp4["moov.mvhd"] != nil {
 		mvhd := mp4["moov.mvhd"][0].(MvhdBox)
 		mvhd.Duration = 0
@@ -2528,7 +2528,7 @@ func CreateDashInit(mp4 map[string][]interface{}) (mp4Init map[string][]interfac
 	}
 	// Get and modify TRAK Box
 	var trak ParentBox
-	copy(trak.Name[:], []byte{ 't', 'r', 'a', 'k' })
+	copy(trak.Name[:], []byte{'t', 'r', 'a', 'k'})
 	replaceBox(mp4Init, "moov.trak", trak)
 	var tkhd TkhdBox
 	if mp4["moov.trak.tkhd"] != nil {
@@ -2543,7 +2543,7 @@ func CreateDashInit(mp4 map[string][]interface{}) (mp4Init map[string][]interfac
 	}
 	// Get and modify MDHD Box
 	var mdia ParentBox
-	copy(mdia.Name[:], []byte{ 'm', 'd', 'i', 'a' })
+	copy(mdia.Name[:], []byte{'m', 'd', 'i', 'a'})
 	var mdhd MdhdBox
 	if mp4["moov.trak.mdia.mdhd"] != nil {
 		mdhd = mp4["moov.trak.mdia.mdhd"][0].(MdhdBox)
@@ -2567,13 +2567,13 @@ func CreateDashInit(mp4 map[string][]interface{}) (mp4Init map[string][]interfac
 	dref := mp4["moov.trak.mdia.minf.dinf.dref"][0].(DrefBox)
 
 	var stbl ParentBox
-	copy(stbl.Name[:], []byte{ 's', 't', 'b', 'l' })
+	copy(stbl.Name[:], []byte{'s', 't', 'b', 'l'})
 	stsd := mp4["moov.trak.mdia.minf.stbl.stsd"][0].(StsdBox)
 	// Audio AAC MP4a
 	if mp4["moov.trak.mdia.minf.stbl.stsd.mp4a"] != nil {
 		mp4a := mp4["moov.trak.mdia.minf.stbl.stsd.mp4a"][0].(Mp4aBox)
 		esds := mp4["moov.trak.mdia.minf.stbl.stsd.mp4a.esds"][0].(EsdsBox)
-		esdsData := []byte{ 0x03, 0x19, 0x00, 0x01, 0x00, 0x04, 0x11, 0x40, 0x15, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0xF3, 0xC2, 0x05, 0x02, 0x11, 0x90, 0x06, 0x01, 0x02 }
+		esdsData := []byte{0x03, 0x19, 0x00, 0x01, 0x00, 0x04, 0x11, 0x40, 0x15, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0xF3, 0xC2, 0x05, 0x02, 0x11, 0x90, 0x06, 0x01, 0x02}
 		copy(esds.Data[:], esdsData[:])
 		esdsOldSize := esds.Size
 		esds.Size = 31
@@ -2589,7 +2589,7 @@ func CreateDashInit(mp4 map[string][]interface{}) (mp4Init map[string][]interfac
 	var btrt BtrtBox
 	if mp4["moov.trak.mdia.minf.stbl.stsd.avc1"] != nil {
 		avc1 = mp4["moov.trak.mdia.minf.stbl.stsd.avc1"][0].(Avc1Box)
-		reserved := [6]byte{ 0, 0, 0, 0, 0, 0 }
+		reserved := [6]byte{0, 0, 0, 0, 0, 0}
 		copy(avc1.Reserved[0:6], reserved[0:6])
 		avc1.dataReferenceIndex = 1
 		avc1.Version = 0
@@ -2653,7 +2653,7 @@ func CreateDashInit(mp4 map[string][]interface{}) (mp4Init map[string][]interfac
 	replaceBox(mp4Init, "moov.trak", trak)
 
 	var mvex ParentBox
-	copy(mvex.Name[:], []byte{ 'm', 'v', 'e', 'x' })
+	copy(mvex.Name[:], []byte{'m', 'v', 'e', 'x'})
 	var elst ElstBox
 	if mp4["moov.trak.edts.elst"] != nil {
 		elst = mp4["moov.trak.edts.elst"][0].(ElstBox)
@@ -2667,7 +2667,7 @@ func CreateDashInit(mp4 map[string][]interface{}) (mp4Init map[string][]interfac
 	var trex TrexBox
 	trex.Size = 24
 	trex.Version = 0
-	trex.Reserved = [3]byte{ 0, 0, 0 }
+	trex.Reserved = [3]byte{0, 0, 0}
 	trex.TrackID = 1
 	trex.DefaultSampleDescriptionIndex = 1
 	trex.DefaultSampleDuration = uint32(elst.MediaTime)
@@ -2697,11 +2697,11 @@ func CreateDashFragment(mp4 map[string][]interface{}, fragmentNumber uint32, fra
 
 	// STYP
 	var styp StypBox
-	styp.MajorBrand = [4]byte{ 'i', 's', 'o', '6' }
+	styp.MajorBrand = [4]byte{'i', 's', 'o', '6'}
 	styp.MinorVersion = 0
 	styp.CompatibleBrands = make([][4]byte, 2)
-	styp.CompatibleBrands[0] = [4]byte{ 'i', 's', 'o', '6' }
-	styp.CompatibleBrands[1] = [4]byte{ 'm', 's', 'd', 'h' }
+	styp.CompatibleBrands[0] = [4]byte{'i', 's', 'o', '6'}
+	styp.CompatibleBrands[1] = [4]byte{'m', 's', 'd', 'h'}
 	styp.Size = 16
 	replaceBox(fmp4, "styp", styp)
 
@@ -2713,27 +2713,27 @@ func CreateDashFragment(mp4 map[string][]interface{}, fragmentNumber uint32, fra
 
 	// MOOF Parent Box
 	var moof ParentBox
-	moof.Name = [4]byte{ 'm', 'o', 'o', 'f' }
+	moof.Name = [4]byte{'m', 'o', 'o', 'f'}
 
 	// MFHD
 	var mfhd MfhdBox
 	mfhd.Version = 0
-	mfhd.Reserved = [3]byte{ 0, 0, 0 }
+	mfhd.Reserved = [3]byte{0, 0, 0}
 	mfhd.SequenceNumber = fragmentNumber
 	mfhd.Size = 8
 	replaceBox(fmp4, "moof.mfhd", mfhd)
 
 	// TRAF ParentBox
 	var traf ParentBox
-	traf.Name = [4]byte{ 't', 'r', 'a', 'f' }
+	traf.Name = [4]byte{'t', 'r', 'a', 'f'}
 
 	// TFHD
 	var tfhd TfhdBox
 	tfhd.Version = 0
 	if isVideo == false {
-		tfhd.Flags[0] = 0x02 // ISO/IEC 14496-12:2015 0x02 default-base-is-moof
-		tfhd.Flags[1] = 0x00 // Nothing
-		tfhd.Flags[2] = 0x28 // 0x28 -> default-sample-flags-present + default-sample-duration-present
+		tfhd.Flags[0] = 0x02                 // ISO/IEC 14496-12:2015 0x02 default-base-is-moof
+		tfhd.Flags[1] = 0x00                 // Nothing
+		tfhd.Flags[2] = 0x28                 // 0x28 -> default-sample-flags-present + default-sample-duration-present
 		tfhd.DefaultSampleFlags = 0x02800040 // To check ISO/IEC ????
 	} else {
 		tfhd.Flags[0] = 0x02
@@ -2752,7 +2752,6 @@ func CreateDashFragment(mp4 map[string][]interface{}, fragmentNumber uint32, fra
 		tfhd.Size = 12
 	}
 	replaceBox(fmp4, "moof.traf.tfhd", tfhd)
-
 
 	// TRUN
 	mdhd := mp4["moov.trak.mdia.mdhd"][0].(MdhdBox)
@@ -2797,10 +2796,10 @@ func CreateDashFragment(mp4 map[string][]interface{}, fragmentNumber uint32, fra
 	mdat.Size = 0
 	// Write video
 	for i = sampleStart; i <= sampleEnd; i++ {
-		trun.Samples[i - sampleStart].Size = stsz.EntrySize[i]
+		trun.Samples[i-sampleStart].Size = stsz.EntrySize[i]
 		trun.Size += 4
 		if isVideo == true {
-			trun.Samples[i - sampleStart].Flags = 21037248
+			trun.Samples[i-sampleStart].Flags = 21037248
 			trun.Size += 4
 		}
 		mdat.Size += stsz.EntrySize[i]
@@ -2808,8 +2807,8 @@ func CreateDashFragment(mp4 map[string][]interface{}, fragmentNumber uint32, fra
 	if isVideo == true {
 		var i uint32
 		for i = 0; int64(stss.SampleNumber[i]) < sampleEnd; i++ {
-			if int64(stss.SampleNumber[i] - 1) >= sampleStart {
-				trun.Samples[int64(stss.SampleNumber[i]) - 1 - sampleStart].Flags = 37748800
+			if int64(stss.SampleNumber[i]-1) >= sampleStart {
+				trun.Samples[int64(stss.SampleNumber[i])-1-sampleStart].Flags = 37748800
 			}
 		}
 	}
@@ -2817,7 +2816,7 @@ func CreateDashFragment(mp4 map[string][]interface{}, fragmentNumber uint32, fra
 	// TFDT
 	var tfdt TfdtBox
 	tfdt.Version = 1
-	tfdt.Reserved = [3]byte{ 0, 0, 0 }
+	tfdt.Reserved = [3]byte{0, 0, 0}
 	tfdt.BaseMediaDecodeTime = uint64(sampleStart) * uint64(tfhd.DefaultSampleDuration)
 	tfdt.Size = 12
 	replaceBox(fmp4, "moof.traf.tfdt", tfdt)
@@ -2839,11 +2838,11 @@ func CreateDashInitWithConf(dConf DashConfig) (mp4Init map[string][]interface{})
 
 	// Create FTYP Box
 	var ftyp FtypBox
-	ftyp.MajorBrand = [4]byte{ 'i', 's', 'o', '6' }
+	ftyp.MajorBrand = [4]byte{'i', 's', 'o', '6'}
 	ftyp.MinorVersion = 0
 	ftyp.CompatibleBrands = make([][4]byte, 2)
-	ftyp.CompatibleBrands[0] = [4]byte{ 'i', 's', 'o', '6' }
-	ftyp.CompatibleBrands[1] = [4]byte{ 'd', 'a', 's', 'h' }
+	ftyp.CompatibleBrands[0] = [4]byte{'i', 's', 'o', '6'}
+	ftyp.CompatibleBrands[1] = [4]byte{'d', 'a', 's', 'h'}
 	ftyp.Size = 16
 	replaceBox(mp4Init, "ftyp", ftyp)
 
@@ -2856,7 +2855,7 @@ func CreateDashInitWithConf(dConf DashConfig) (mp4Init map[string][]interface{})
 	// Create MVHD Box
 	var mvhd MvhdBox
 	mvhd.Version = 0
-	copy(mvhd.Reserved[0:3], []byte{ 0, 0, 0})
+	copy(mvhd.Reserved[0:3], []byte{0, 0, 0})
 	mvhd.CreationTime = 0
 	mvhd.ModificationTime = 0
 	mvhd.Timescale = 1
@@ -2865,19 +2864,19 @@ func CreateDashInitWithConf(dConf DashConfig) (mp4Init map[string][]interface{})
 	mvhd.Volume = dConf.Volume
 	mvhd.Reserved2 = 0
 	mvhd.Reserved3 = 0
-	mvhd.Matrix = [9]int32{ 0x00010000, 0, 0, 0, 0x00010000, 0, 0, 0, 0x40000000 }
-	mvhd.PreDefined = [6]uint32{ 0, 0, 0, 0, 0, 0 }
+	mvhd.Matrix = [9]int32{0x00010000, 0, 0, 0, 0x00010000, 0, 0, 0, 0x40000000}
+	mvhd.PreDefined = [6]uint32{0, 0, 0, 0, 0, 0}
 	mvhd.NextTrackID = 2
 	mvhd.Size = 100
 	replaceBox(mp4Init, "moov.mvhd", mvhd)
 
 	// Create TRAK/TKHD Box
 	var trak ParentBox
-	copy(trak.Name[:], []byte{ 't', 'r', 'a', 'k' })
+	copy(trak.Name[:], []byte{'t', 'r', 'a', 'k'})
 	replaceBox(mp4Init, "moov.trak", trak)
 	var tkhd TkhdBox
 	tkhd.Version = 0
-	tkhd.Flags = [3]byte{ 0x00, 0x00, 0x07 }	// 0x000001 Track_enabled | 0x000002 Track_in_movie | 0x000004 Track_in_preview
+	tkhd.Flags = [3]byte{0x00, 0x00, 0x07} // 0x000001 Track_enabled | 0x000002 Track_in_movie | 0x000004 Track_in_preview
 	tkhd.CreationTime = 0
 	tkhd.ModificationTime = 0
 	tkhd.TrackID = 1
@@ -2892,7 +2891,7 @@ func CreateDashInitWithConf(dConf DashConfig) (mp4Init map[string][]interface{})
 		tkhd.Volume = 0x0100
 	}
 	tkhd.Reserved3 = 0
-	tkhd.Matrix = [9]int32{ 0x00010000, 0, 0, 0, 0x00010000, 0, 0, 0, 0x40000000 }
+	tkhd.Matrix = [9]int32{0x00010000, 0, 0, 0, 0x00010000, 0, 0, 0, 0x40000000}
 	if dConf.Type == "video" {
 		tkhd.Width = uint32(dConf.Video.Width) * uint32(tkhd.Matrix[0])
 		tkhd.Height = uint32(dConf.Video.Height) * uint32(tkhd.Matrix[4])
@@ -2905,15 +2904,15 @@ func CreateDashInitWithConf(dConf DashConfig) (mp4Init map[string][]interface{})
 
 	// Create MDHD Box
 	var mdia ParentBox
-	copy(mdia.Name[:], []byte{ 'm', 'd', 'i', 'a' })
+	copy(mdia.Name[:], []byte{'m', 'd', 'i', 'a'})
 	var mdhd MdhdBox
 	mdhd.Version = 0
-	mdhd.Reserved = [3]byte{ 0, 0, 0 }
+	mdhd.Reserved = [3]byte{0, 0, 0}
 	mdhd.CreationTime = 0
 	mdhd.ModificationTime = 0
 	mdhd.Timescale = dConf.Timescale
 	mdhd.Duration = 0
-	mdhd.Language = 0x8000 | ((uint16((dConf.Language[0] - 0x60) & 0x1F) << 10) | (uint16((dConf.Language[1] - 0x60) & 0x1F) << 5) | (uint16(dConf.Language[2] - 0x60) & 0x1F))
+	mdhd.Language = 0x8000 | ((uint16((dConf.Language[0]-0x60)&0x1F) << 10) | (uint16((dConf.Language[1]-0x60)&0x1F) << 5) | (uint16(dConf.Language[2]-0x60) & 0x1F))
 	mdhd.PreDefined = 0
 	mdhd.Size = 24
 	replaceBox(mp4Init, "moov.trak.mdia.mdhd", mdhd)
@@ -2921,10 +2920,10 @@ func CreateDashInitWithConf(dConf DashConfig) (mp4Init map[string][]interface{})
 	// Create HDLR Box
 	var hdlr HdlrBox
 	hdlr.Version = 0
-	hdlr.Reserved = [3]byte{ 0, 0, 0 }
+	hdlr.Reserved = [3]byte{0, 0, 0}
 	hdlr.PreDefined = 0
 	hdlr.HandlerType = dConf.HandlerType
-	hdlr.Reserved2 = [3]uint32{ 0, 0, 0 }
+	hdlr.Reserved2 = [3]uint32{0, 0, 0}
 	if dConf.Type == "video" {
 		hdlr.Name = []byte("AMS Video Handler\x00")
 	} else {
@@ -2935,24 +2934,24 @@ func CreateDashInitWithConf(dConf DashConfig) (mp4Init map[string][]interface{})
 
 	// Create MINF Box
 	var minf ParentBox
-	minf.Name = [4]byte{ 'm', 'i', 'n', 'f' }
+	minf.Name = [4]byte{'m', 'i', 'n', 'f'}
 
 	// Create DREF Box
 	var dref DrefBox
 	dref.Version = 0
-	dref.Reserved = [3]byte{ 0, 0, 0 }
+	dref.Reserved = [3]byte{0, 0, 0}
 	dref.EntryCount = 1
 	dref.UrlBox = make([]DrefUrlBox, 1)
 	dref.UrlBox[0].Location = ""
 	dref.UrlBox[0].Version = 0
-	dref.UrlBox[0].Flags = [3]byte{ 0, 0, 1 }
+	dref.UrlBox[0].Flags = [3]byte{0, 0, 1}
 	dref.UrlBox[0].Size = 12
 	dref.Size = 20
 	replaceBox(mp4Init, "moov.trak.mdia.minf.dinf.dref", dref)
 
 	// Create DINF Box
 	var dinf ParentBox
-	dinf.Name = [4]byte{ 'd', 'i', 'n', 'f' }
+	dinf.Name = [4]byte{'d', 'i', 'n', 'f'}
 	dinf.Size = dref.Size + 8
 	replaceBox(mp4Init, "moov.trak.mdia.minf.dinf", dinf)
 
@@ -2979,26 +2978,26 @@ func CreateDashInitWithConf(dConf DashConfig) (mp4Init map[string][]interface{})
 	// Create STSD Box
 	var stsd StsdBox
 	stsd.Version = 0
-	stsd.Reserved = [3]byte{ 0, 0, 0 }
+	stsd.Reserved = [3]byte{0, 0, 0}
 	stsd.EntryCount = 1
 
 	// Create MP4A Box if Type == "audio"
 	if dConf.Type == "audio" {
 		var smhd SmhdBox
 		smhd.Version = 0
-		smhd.Reserved = [3]byte{ 0, 0, 0 }
+		smhd.Reserved = [3]byte{0, 0, 0}
 		smhd.Balance = 0
 		smhd.Reserved2 = 0
 		smhd.Size = 8
 		replaceBox(mp4Init, "moov.trak.mdia.minf.smhd", smhd)
 
 		var esds EsdsBox
-		esds.Data = []byte{ 0x03, 0x19, 0x00, 0x01, 0x00, 0x04, 0x11, 0x40, 0x15, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0xF3, 0xC2, 0x05, 0x02, 0x11, 0x90, 0x06, 0x01, 0x02 }
+		esds.Data = []byte{0x03, 0x19, 0x00, 0x01, 0x00, 0x04, 0x11, 0x40, 0x15, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0xF3, 0xC2, 0x05, 0x02, 0x11, 0x90, 0x06, 0x01, 0x02}
 		esds.Size = 31
 		replaceBox(mp4Init, "moov.trak.mdia.minf.stbl.stsd.mp4a.esds", esds)
 
 		var mp4a Mp4aBox
-		mp4a.Reserved = [6]byte{ 0, 0, 0, 0, 0, 0 }
+		mp4a.Reserved = [6]byte{0, 0, 0, 0, 0, 0}
 		mp4a.DataReferenceIndex = 1
 		mp4a.Version = 0
 		mp4a.RevisionLevel = 0
@@ -3015,7 +3014,7 @@ func CreateDashInitWithConf(dConf DashConfig) (mp4Init map[string][]interface{})
 
 		// Create STBL Box
 		var stbl ParentBox
-		stbl.Name = [4]byte{ 's', 't', 'b', 'l' }
+		stbl.Name = [4]byte{'s', 't', 'b', 'l'}
 		stbl.Size = stsd.Size + 8 + stts.Size + 8 + stsc.Size + 8 + stsz.Size + 8 + stco.Size + 8
 		replaceBox(mp4Init, "moov.trak.mdia.minf.stbl", stbl)
 
@@ -3026,9 +3025,9 @@ func CreateDashInitWithConf(dConf DashConfig) (mp4Init map[string][]interface{})
 	if dConf.Type == "video" {
 		var vmhd VmhdBox
 		vmhd.Version = 0
-		vmhd.Reserved = [3]byte{ 0, 0, 1 }
+		vmhd.Reserved = [3]byte{0, 0, 1}
 		vmhd.GraphicsMode = 0
-		vmhd.OpColor = [3]uint16{ 0, 0, 0 }
+		vmhd.OpColor = [3]uint16{0, 0, 0}
 		vmhd.Size = 12
 		replaceBox(mp4Init, "moov.trak.mdia.minf.vmhd", vmhd)
 
@@ -3055,7 +3054,7 @@ func CreateDashInitWithConf(dConf DashConfig) (mp4Init map[string][]interface{})
 		replaceBox(mp4Init, "moov.trak.mdia.minf.stbl.stsd.avc1.btrt", btrt)
 
 		var avc1 Avc1Box
-		avc1.Reserved = [6]byte{ 0, 0, 0, 0, 0, 0 }
+		avc1.Reserved = [6]byte{0, 0, 0, 0, 0, 0}
 		avc1.dataReferenceIndex = 1
 		avc1.Version = 0
 		avc1.RevisionLevel = 0
@@ -3080,13 +3079,12 @@ func CreateDashInitWithConf(dConf DashConfig) (mp4Init map[string][]interface{})
 
 		// Create STBL Box
 		var stbl ParentBox
-		stbl.Name = [4]byte{ 's', 't', 'b', 'l' }
+		stbl.Name = [4]byte{'s', 't', 'b', 'l'}
 		stbl.Size = stsd.Size + 8 + stts.Size + 8 + stsc.Size + 8 + stsz.Size + 8 + stco.Size + 8
 		replaceBox(mp4Init, "moov.trak.mdia.minf.stbl", stbl)
 
 		minf.Size = vmhd.Size + 8 + dinf.Size + 8 + stbl.Size + 8
 	}
-
 
 	mdia.Size += mdhd.Size + 8 + hdlr.Size + 8 + minf.Size + 8
 	trak.Size += tkhd.Size + 8 + mdia.Size + 8
@@ -3100,7 +3098,7 @@ func CreateDashInitWithConf(dConf DashConfig) (mp4Init map[string][]interface{})
 	var trex TrexBox
 	trex.Size = 24
 	trex.Version = 0
-	trex.Reserved = [3]byte{ 0, 0, 0 }
+	trex.Reserved = [3]byte{0, 0, 0}
 	trex.TrackID = 1
 	trex.DefaultSampleDescriptionIndex = 1
 	trex.DefaultSampleDuration = dConf.SampleDelta
@@ -3110,13 +3108,13 @@ func CreateDashInitWithConf(dConf DashConfig) (mp4Init map[string][]interface{})
 
 	// Create MVEX Box
 	var mvex ParentBox
-	copy(mvex.Name[:], []byte{ 'm', 'v', 'e', 'x' })
+	copy(mvex.Name[:], []byte{'m', 'v', 'e', 'x'})
 	mvex.Size += trex.Size + 8
 	replaceBox(mp4Init, "moov.mvex", mvex)
 
 	// And finaly MOOV Box
 	var moov ParentBox
-	copy(moov.Name[:], []byte{ 'm', 'o', 'o', 'v' })
+	copy(moov.Name[:], []byte{'m', 'o', 'o', 'v'})
 	moov.Size = mvhd.Size + 8 + trak.Size + 8 + mvex.Size + 8
 	replaceBox(mp4Init, "moov", moov)
 
@@ -3141,19 +3139,19 @@ func CreateDashFragmentWithConf(dConf DashConfig, filename string, fragmentNumbe
 
 	// MOOF Parent Box
 	var moof ParentBox
-	moof.Name = [4]byte{ 'm', 'o', 'o', 'f' }
+	moof.Name = [4]byte{'m', 'o', 'o', 'f'}
 
 	// MFHD
 	var mfhd MfhdBox
 	mfhd.Version = 0
-	mfhd.Reserved = [3]byte{ 0, 0, 0 }
+	mfhd.Reserved = [3]byte{0, 0, 0}
 	mfhd.SequenceNumber = fragmentNumber
 	mfhd.Size = 8
 	replaceBox(fmp4, "moof.mfhd", mfhd)
 
 	// TRAF ParentBox
 	var traf ParentBox
-	traf.Name = [4]byte{ 't', 'r', 'a', 'f' }
+	traf.Name = [4]byte{'t', 'r', 'a', 'f'}
 
 	// TFHD
 	var tfhd TfhdBox
@@ -3229,11 +3227,11 @@ func CreateDashFragmentWithConf(dConf DashConfig, filename string, fragmentNumbe
 		sampleStartSet := false
 		for i = 0; (i < stss.EntryCount) && ((stss.SampleNumber[i] - 1) < sampleEnd); i++ {
 			if (stss.SampleNumber[i] - 1) >= sampleStart {
-				if sampleStartSet == false	{
+				if sampleStartSet == false {
 					sampleStart = stss.SampleNumber[i] - 1
 					sampleStartSet = true
 				}
-				iFramesToSet = append(iFramesToSet, stss.SampleNumber[i] - 1 - sampleStart)
+				iFramesToSet = append(iFramesToSet, stss.SampleNumber[i]-1-sampleStart)
 			}
 		}
 		if i < stss.EntryCount {
@@ -3251,7 +3249,7 @@ func CreateDashFragmentWithConf(dConf DashConfig, filename string, fragmentNumbe
 	if stszSize > dConf.StszBoxSize {
 		stszSize = dConf.StszBoxSize
 	}
-	readStszBox(f, stszSize , 0, "moov.trak.mdia.minf.stbl.stsz", mp4)
+	readStszBox(f, stszSize, 0, "moov.trak.mdia.minf.stbl.stsz", mp4)
 	stsz := mp4["moov.trak.mdia.minf.stbl.stsz"][0].(StszBox)
 	if sampleEnd > (stsz.SampleCount - 1) {
 		sampleEnd = stsz.SampleCount - 1
@@ -3298,20 +3296,20 @@ func CreateDashFragmentWithConf(dConf DashConfig, filename string, fragmentNumbe
 		} else {
 			size = stsz.SampleSize
 		}
-		trun.Samples[i - sampleStart].Size = size
+		trun.Samples[i-sampleStart].Size = size
 		trun.Size += 4
 		if dConf.Type == "video" {
-			trun.Samples[i - sampleStart].Flags = 21037248
+			trun.Samples[i-sampleStart].Flags = 21037248
 			trun.Size += 4
 			if compositionTimeOffset == true {
 				if lastCompositionTimeOffset != 0 {
-					trun.Samples[i - sampleStart].Flags = 25231552
+					trun.Samples[i-sampleStart].Flags = 25231552
 				}
-				trun.Samples[i - sampleStart].CompositionTimeOffset = int64(ctts.Entries[cttsOffset].SampleOffset) - dConf.MediaTime
-				if trun.Samples[i - sampleStart].CompositionTimeOffset > 0 {
-					lastCompositionTimeOffset = trun.Samples[i - sampleStart].CompositionTimeOffset
+				trun.Samples[i-sampleStart].CompositionTimeOffset = int64(ctts.Entries[cttsOffset].SampleOffset) - dConf.MediaTime
+				if trun.Samples[i-sampleStart].CompositionTimeOffset > 0 {
+					lastCompositionTimeOffset = trun.Samples[i-sampleStart].CompositionTimeOffset
 				} else {
-					lastCompositionTimeOffset += trun.Samples[i - sampleStart].CompositionTimeOffset
+					lastCompositionTimeOffset += trun.Samples[i-sampleStart].CompositionTimeOffset
 				}
 				trun.Size += 4
 				if cttsSampleCount > 0 {
@@ -3338,7 +3336,7 @@ func CreateDashFragmentWithConf(dConf DashConfig, filename string, fragmentNumbe
 	// TFDT
 	var tfdt TfdtBox
 	tfdt.Version = 1
-	tfdt.Reserved = [3]byte{ 0, 0, 0 }
+	tfdt.Reserved = [3]byte{0, 0, 0}
 	tfdt.BaseMediaDecodeTime = uint64(sampleStart) * uint64(tfhd.DefaultSampleDuration)
 	tfdt.Size = 12
 	replaceBox(fmp4, "moof.traf.tfdt", tfdt)
@@ -3355,18 +3353,18 @@ func CreateDashFragmentWithConf(dConf DashConfig, filename string, fragmentNumbe
 
 	// STYP
 	var styp StypBox
-	styp.MajorBrand = [4]byte{ 'i', 's', 'o', '6' }
+	styp.MajorBrand = [4]byte{'i', 's', 'o', '6'}
 	styp.MinorVersion = 0
 	if lastSegment == true {
 		styp.CompatibleBrands = make([][4]byte, 3)
-		styp.CompatibleBrands[2] = [4]byte{ 'l', 'm', 's', 'g' }
+		styp.CompatibleBrands[2] = [4]byte{'l', 'm', 's', 'g'}
 		styp.Size = 20
 	} else {
 		styp.CompatibleBrands = make([][4]byte, 2)
 		styp.Size = 16
 	}
-	styp.CompatibleBrands[0] = [4]byte{ 'i', 's', 'o', '6' }
-	styp.CompatibleBrands[1] = [4]byte{ 'm', 's', 'd', 'h' }
+	styp.CompatibleBrands[0] = [4]byte{'i', 's', 'o', '6'}
+	styp.CompatibleBrands[1] = [4]byte{'m', 's', 'd', 'h'}
 	replaceBox(fmp4, "styp", styp)
 
 	return
@@ -3379,67 +3377,67 @@ func CreateDashFragmentWithConf(dConf DashConfig, filename string, fragmentNumbe
 func init() {
 	debugMode = false
 	funcBoxes = map[string]interface{}{
-		"ftyp": readFtypBox,
-		"styp": readStypBox,
-		"free": readFreeBox,
-		"moov": readBoxes,
-		"moov.mvhd": readMvhdBox,
-		"moov.trak": readBoxes,
-		"moov.trak.tkhd": readTkhdBox,
-		"moov.trak.edts": readBoxes,
-		"moov.trak.edts.elst": readElstBox,
-		"moov.trak.mdia": readBoxes,
-		"moov.trak.mdia.mdhd": readMdhdBox,
-		"moov.trak.mdia.hdlr": readHdlrBox,
-		"moov.trak.mdia.minf": readBoxes,
-		"moov.trak.mdia.minf.vmhd": readVmhdBox,
-		"moov.trak.mdia.minf.smhd": readSmhdBox,
-		"moov.trak.mdia.minf.hmhd": readVmhdBox,
-		"moov.trak.mdia.minf.dinf": readBoxes,
-		"moov.trak.mdia.minf.dinf.dref": readDrefBox,
-		"moov.trak.mdia.minf.stbl": readBoxes,
-		"moov.trak.mdia.minf.stbl.stts" : readSttsBox,
-		"moov.trak.mdia.minf.stbl.ctts" : readCttsBox,
-		"moov.trak.mdia.minf.stbl.stsd" : readStsdBox,
-		"moov.trak.mdia.minf.stbl.stsd.mp4a" : readMp4aBox,
-		"moov.trak.mdia.minf.stbl.stsd.mp4a.esds" : readEsdsBox,
-		"moov.trak.mdia.minf.stbl.stsd.avc1" : readAvc1Box,
-		"moov.trak.mdia.minf.stbl.stsd.avc1.avcC" : readAvcCBox,
-		"moov.trak.mdia.minf.stbl.stsd.avc1.btrt" : readBtrtBox,
-		"moov.trak.mdia.minf.stbl.stsd.encv": readAvc1Box,
-		"moov.trak.mdia.minf.stbl.stsd.encv.avcC" : readAvcCBox,
-		"moov.trak.mdia.minf.stbl.stsd.encv.btrt": readBtrtBox,
-		"moov.trak.mdia.minf.stbl.stsd.encv.sinf": readBoxes,
+		"ftyp":                                         readFtypBox,
+		"styp":                                         readStypBox,
+		"free":                                         readFreeBox,
+		"moov":                                         readBoxes,
+		"moov.mvhd":                                    readMvhdBox,
+		"moov.trak":                                    readBoxes,
+		"moov.trak.tkhd":                               readTkhdBox,
+		"moov.trak.edts":                               readBoxes,
+		"moov.trak.edts.elst":                          readElstBox,
+		"moov.trak.mdia":                               readBoxes,
+		"moov.trak.mdia.mdhd":                          readMdhdBox,
+		"moov.trak.mdia.hdlr":                          readHdlrBox,
+		"moov.trak.mdia.minf":                          readBoxes,
+		"moov.trak.mdia.minf.vmhd":                     readVmhdBox,
+		"moov.trak.mdia.minf.smhd":                     readSmhdBox,
+		"moov.trak.mdia.minf.hmhd":                     readVmhdBox,
+		"moov.trak.mdia.minf.dinf":                     readBoxes,
+		"moov.trak.mdia.minf.dinf.dref":                readDrefBox,
+		"moov.trak.mdia.minf.stbl":                     readBoxes,
+		"moov.trak.mdia.minf.stbl.stts":                readSttsBox,
+		"moov.trak.mdia.minf.stbl.ctts":                readCttsBox,
+		"moov.trak.mdia.minf.stbl.stsd":                readStsdBox,
+		"moov.trak.mdia.minf.stbl.stsd.mp4a":           readMp4aBox,
+		"moov.trak.mdia.minf.stbl.stsd.mp4a.esds":      readEsdsBox,
+		"moov.trak.mdia.minf.stbl.stsd.avc1":           readAvc1Box,
+		"moov.trak.mdia.minf.stbl.stsd.avc1.avcC":      readAvcCBox,
+		"moov.trak.mdia.minf.stbl.stsd.avc1.btrt":      readBtrtBox,
+		"moov.trak.mdia.minf.stbl.stsd.encv":           readAvc1Box,
+		"moov.trak.mdia.minf.stbl.stsd.encv.avcC":      readAvcCBox,
+		"moov.trak.mdia.minf.stbl.stsd.encv.btrt":      readBtrtBox,
+		"moov.trak.mdia.minf.stbl.stsd.encv.sinf":      readBoxes,
 		"moov.trak.mdia.minf.stbl.stsd.encv.sinf.frma": readFrmaBox,
 		"moov.trak.mdia.minf.stbl.stsd.encv.sinf.schm": readSchmBox,
 		"moov.trak.mdia.minf.stbl.stsd.encv.sinf.schi": readBoxes,
-		"moov.trak.mdia.minf.stbl.stsc" : readStscBox,
-		"moov.trak.mdia.minf.stbl.stsz" : readStszBox,
-		"moov.trak.mdia.minf.stbl.sdtp" : readSdtpBox,
-		"moov.trak.mdia.minf.stbl.stco" : readStcoBox,
-		"moov.trak.mdia.minf.stbl.stss" : readStssBox,
-		"moov.mvex": readBoxes,
-		"moov.mvex.mehd": readMehdBox,
-		"moov.mvex.trex": readTrexBox,
-		"moov.udta": readBoxes,
-		"moof": readBoxes,
-		"moof.mfhd": readMfhdBox,
-		"moof.traf": readBoxes,
-		"moof.traf.tfhd": readTfhdBox,
-		"moof.traf.trun": readTrunBox,
-		"moof.traf.tfdt": readTfdtBox,
-		"mfra": readBoxes,
-		"skip": readBoxes,
-		"skip.udta": readBoxes,
-		"skip.udta.cprt": readBoxes,
-		"meta": readBoxes,
-		"meta.dinf": readBoxes,
-		"meta.ipro": readBoxes,
-		"meta.ipro.sinf": readBoxes,
-		"meta.ipro.sinf.frma": readFrmaBox,
-		"meta.flin": readBoxes,
-		"meta.flin.paen": readBoxes,
-		"meco": readBoxes,
-		"mdat": readMdatBox,
+		"moov.trak.mdia.minf.stbl.stsc":                readStscBox,
+		"moov.trak.mdia.minf.stbl.stsz":                readStszBox,
+		"moov.trak.mdia.minf.stbl.sdtp":                readSdtpBox,
+		"moov.trak.mdia.minf.stbl.stco":                readStcoBox,
+		"moov.trak.mdia.minf.stbl.stss":                readStssBox,
+		"moov.mvex":                                    readBoxes,
+		"moov.mvex.mehd":                               readMehdBox,
+		"moov.mvex.trex":                               readTrexBox,
+		"moov.udta":                                    readBoxes,
+		"moof":                                         readBoxes,
+		"moof.mfhd":                                    readMfhdBox,
+		"moof.traf":                                    readBoxes,
+		"moof.traf.tfhd":                               readTfhdBox,
+		"moof.traf.trun":                               readTrunBox,
+		"moof.traf.tfdt":                               readTfdtBox,
+		"mfra":                                         readBoxes,
+		"skip":                                         readBoxes,
+		"skip.udta":                                    readBoxes,
+		"skip.udta.cprt":                               readBoxes,
+		"meta":                                         readBoxes,
+		"meta.dinf":                                    readBoxes,
+		"meta.ipro":                                    readBoxes,
+		"meta.ipro.sinf":                               readBoxes,
+		"meta.ipro.sinf.frma":                          readFrmaBox,
+		"meta.flin":                                    readBoxes,
+		"meta.flin.paen":                               readBoxes,
+		"meco":                                         readBoxes,
+		"mdat":                                         readMdatBox,
 	}
 }

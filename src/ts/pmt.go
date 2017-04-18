@@ -3,28 +3,28 @@ package ts
 type PMT struct {
 	Packet
 	PointField byte // 1Byte
-	Section ProgramMapSection
+	Section    ProgramMapSection
 }
 
 type ProgramMapSection struct {
 	Bytes
-	TableID                byte; // 1Byte
-	SectionSyntaxIndicator byte;
-	SectionLength          uint16; // 12b
-	ProgramNumber          uint16; // 2Bytes
-	VersionNumber          byte; // 5b
-	CurrentNextIndicator   byte;
-	SectionNumber          byte; // 1Byte
-	LastSectionNumber      byte; // 1Byte
-	PCR_PID                uint16; // 13b
-	ProgramInfoLength      uint16; // 12b
-	Sections               []ProgramMapSubSection;
+	TableID                byte // 1Byte
+	SectionSyntaxIndicator byte
+	SectionLength          uint16 // 12b
+	ProgramNumber          uint16 // 2Bytes
+	VersionNumber          byte   // 5b
+	CurrentNextIndicator   byte
+	SectionNumber          byte   // 1Byte
+	LastSectionNumber      byte   // 1Byte
+	PCR_PID                uint16 // 13b
+	ProgramInfoLength      uint16 // 12b
+	Sections               []ProgramMapSubSection
 }
 
 type ProgramMapSubSection struct {
-	StreamType byte; // 1Byte
-	ElementaryPID uint16; // 13b
-	ESInfoLength uint16; // 12b
+	StreamType    byte   // 1Byte
+	ElementaryPID uint16 // 13b
+	ESInfoLength  uint16 // 12b
 }
 
 // To bytes
@@ -36,7 +36,7 @@ func (pmt PMT) Bytes() (data Data) {
 	// Program association section
 	data.PushBytes(pmt.Section)
 
-	if (pmt.HasPayload()) {
+	if pmt.HasPayload() {
 		// Push payload
 		data.PushBytes(pmt.Payload)
 	}
@@ -52,7 +52,7 @@ func (section ProgramMapSection) ToBytes() (data Data) {
 
 	data.PushObj(section.TableID, 8)
 	data.PushObj(section.SectionSyntaxIndicator, 1)
-	data.PushObj(0, 1) // Private
+	data.PushObj(0, 1)    // Private
 	data.PushObj(0x03, 2) // Reserved
 	data.PushObj(section.SectionLength, 12)
 	data.PushObj(section.ProgramNumber, 16)
@@ -80,7 +80,7 @@ func (section ProgramMapSection) ToBytes() (data Data) {
 }
 
 // Constructor
-func NewPMT() (pmt *PMT) {
+func NewPMT(PCR_PID uint16) (pmt *PMT) {
 	pmt = new(PMT)
 
 	pmt.PID = 4096
@@ -91,7 +91,7 @@ func NewPMT() (pmt *PMT) {
 	pmt.Section.SectionSyntaxIndicator = 1
 	pmt.Section.SectionLength = 13
 	pmt.Section.CurrentNextIndicator = 1
-	pmt.Section.PCR_PID = 256
+	pmt.Section.PCR_PID = PCR_PID
 
 	pmt.Section.Sections = make([]ProgramMapSubSection, 2)
 

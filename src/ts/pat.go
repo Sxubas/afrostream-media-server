@@ -5,25 +5,24 @@ type PAT struct {
 	Packet
 	PointField byte // 1Byte
 	Section    ProgramAssociationSection
-
 }
 
 type ProgramAssociationSection struct {
 	Bytes
-	TableID byte; // 1Byte
-	SectionSyntaxIndicator byte;
-	SectionLength uint16; // 12b;
-	TransportStreamID byte; // 2b
-	VersionNumber byte; // 5b
-	CurrentNextIndicator byte;
-	SectionNumber byte; // 1Byte
-	LastSectionNumber byte; // 1Byte
-	Sections []ProgramAssociationSubSection;
+	TableID                byte // 1Byte
+	SectionSyntaxIndicator byte
+	SectionLength          uint16 // 12b;
+	TransportStreamID      byte   // 2b
+	VersionNumber          byte   // 5b
+	CurrentNextIndicator   byte
+	SectionNumber          byte // 1Byte
+	LastSectionNumber      byte // 1Byte
+	Sections               []ProgramAssociationSubSection
 }
 
 type ProgramAssociationSubSection struct {
-	ProgramNumber byte; // 2b
-	ProgramMapID uint16; // 13b
+	ProgramNumber byte   // 2b
+	ProgramMapID  uint16 // 13b
 }
 
 // To Bytes
@@ -36,7 +35,7 @@ func (pat PAT) Bytes() (data Data) {
 	// Program association section
 	data.PushBytes(pat.Section)
 
-	if (pat.HasPayload()) {
+	if pat.HasPayload() {
 		// Push payload
 		data.PushBytes(pat.Payload)
 	}
@@ -52,7 +51,7 @@ func (section ProgramAssociationSection) ToBytes() (data Data) {
 
 	data.PushObj(section.TableID, 8)
 	data.PushObj(section.SectionSyntaxIndicator, 1)
-	data.PushObj(0, 1) // Private
+	data.PushObj(0, 1)    // Private
 	data.PushObj(0x03, 2) // Reserved
 	data.PushObj(section.SectionLength, 12)
 	data.PushObj(section.TransportStreamID, 16)
@@ -62,10 +61,9 @@ func (section ProgramAssociationSection) ToBytes() (data Data) {
 	data.PushObj(section.SectionNumber, 8)
 	data.PushObj(section.LastSectionNumber, 8)
 
-
 	for programIndex := 0; programIndex < len(section.Sections); programIndex++ {
 		data.PushObj(section.Sections[programIndex].ProgramNumber, 16)
-		data.PushObj(0x07, 3) // Reserved
+		data.PushObj(0x07, 3)                                         // Reserved
 		data.PushObj(section.Sections[programIndex].ProgramMapID, 13) // Or Network_PID
 	}
 

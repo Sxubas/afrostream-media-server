@@ -1,8 +1,7 @@
 package ts
 
-import (
+import ()
 
-)
 
 type Packet struct {
 	Header
@@ -13,34 +12,33 @@ type Packet struct {
 // Structures
 type Header struct {
 	Bytes
-	TransportErrorIndicator byte;
-	PayloadUnitStartIndicator byte;
-	TransportPriority byte;
-	PID uint16; // 13b
-	TransportScramblingControl byte; // 2b
-	AdaptationFieldControl byte; // 2b
-	ContinuityCounter byte; // 4b
+	TransportErrorIndicator    byte
+	PayloadUnitStartIndicator  byte
+	TransportPriority          byte
+	PID                        uint16 // 13b
+	TransportScramblingControl byte   // 2b
+	AdaptationFieldControl     byte   // 2b
+	ContinuityCounter          byte   // 4b
 }
 
 type AdaptationField struct {
 	Bytes
-	AdaptationFieldLength byte; // 1Byte
-	DiscontinuityIndicator byte;
-	RandomAccessIndicator byte;
-	ElementaryStreamPriorityIndicator byte;
-	PCR_Flag byte;
-	OPCR_Flag byte;
-	SplicingPointFlag byte;
-	TransportPrivateDataFlag byte;
-	AdaptationFieldExtensionFlag byte;
-	PCR PCR;
+	AdaptationFieldLength             byte // 1Byte
+	DiscontinuityIndicator            byte
+	RandomAccessIndicator             byte
+	ElementaryStreamPriorityIndicator byte
+	PCR_Flag                          byte
+	OPCR_Flag                         byte
+	SplicingPointFlag                 byte
+	TransportPrivateDataFlag          byte
+	AdaptationFieldExtensionFlag      byte
+	PCR                               PCR
 }
 
 type PCR struct {
 	Bytes
-	ProgramClockReferenceBase uint64; // 33b;
-	Reserved byte; // 6b;
-	ProgramClockReferenceExtension uint16; // 9b
+	ProgramClockReferenceBase      uint64 // 33b;
+	ProgramClockReferenceExtension uint16 // 9b
 }
 
 // Bytes
@@ -75,7 +73,7 @@ func (header Header) ToBytes() (data Data) {
 func (pcr PCR) ToBytes() (data Data) {
 	data = *NewData(4)
 	data.PushObj(pcr.ProgramClockReferenceBase, 33)
-	data.PushObj(pcr.Reserved, 6)
+	data.PushObj(0x3f, 6)
 	data.PushObj(pcr.ProgramClockReferenceExtension, 9)
 	return
 }
@@ -84,7 +82,7 @@ func (field AdaptationField) ToBytes() (data Data) {
 	// Compute Adaptation length adding the first byte length
 	adaptationLength := int(field.AdaptationFieldLength + 1)
 
-	data = *NewData(int(adaptationLength));
+	data = *NewData(int(adaptationLength))
 
 	data.PushObj(field.AdaptationFieldLength, 8)
 	data.PushObj(field.DiscontinuityIndicator, 1)
@@ -110,10 +108,11 @@ func (field AdaptationField) ToBytes() (data Data) {
 
 // Check if the current packet has adaptation field flag activated
 func (packet Packet) HasAdaptationField() bool {
-	return packet.Header.AdaptationFieldControl & 2 != 0
+	return packet.Header.AdaptationFieldControl&2 != 0
 }
 
 // Check if the current packet has payload field flag activated
 func (packet Packet) HasPayload() bool {
-	return packet.Header.AdaptationFieldControl & 1 != 0
+	return packet.Header.AdaptationFieldControl&1 != 0
 }
+
