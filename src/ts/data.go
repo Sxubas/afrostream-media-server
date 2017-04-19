@@ -197,11 +197,41 @@ func NewData(length int) *Data {
 }
 
 func (data *Data) PrintBinary() {
-	fmt.Printf("%08b\n", data.Data)
+	var i uint32 = 0
+	size := uint32(data.Offset)
+	for i < size {
+		PrintLine("%08b    ", i, size, data.Data)
+		i += 16
+	}
 }
 
 func (data *Data) PrintHex() {
-	fmt.Printf("% 8X\n", data.Data)
+	var i uint32 = 0
+	size := uint32(data.Offset)
+	for i < size {
+		PrintLine("% 8X   ", i, size, data.Data)
+		i += 16
+	}
+}
+
+func (data *Data) PrintHexFull() {
+	var i uint32 = 0
+	size := uint32(data.Offset)
+	fmt.Printf("\nData-Bytes:\n")
+	for i < size {
+		fmt.Printf(" %04X:    ", uint16(i))
+		PrintLine("% 8X   ", i, size, data.Data)
+		i += 16
+	}
+}
+
+func PrintLine(format string, start uint32, size uint32, bytes []byte) {
+	for w := 0; w < 2 && start < size; w++ {
+		endMax := Min32(start + 8, size)
+		fmt.Printf(format, bytes[start:endMax])
+		start += 8
+	}
+	fmt.Printf("\n")
 }
 
 func (data *Data) GenerateCRC32() uint32 {

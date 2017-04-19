@@ -2,7 +2,6 @@ package ts
 
 import ()
 
-
 type Packet struct {
 	Header
 	AdaptationField

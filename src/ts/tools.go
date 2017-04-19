@@ -13,3 +13,17 @@ func Min32(a, b uint32) uint32 {
 	}
 	return b
 }
+
+func Max(a, b int) int {
+	if a <= b {
+		return b
+	}
+	return a
+}
+
+func Max32(a, b uint32) uint32 {
+	if a <= b {
+		return b
+	}
+	return a
+}
