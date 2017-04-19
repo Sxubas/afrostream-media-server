@@ -8,6 +8,9 @@ import (
 )
 
 func main() {
+	data := ts.NewData(4)
+	data.PushUInt(0x03, 2)
+
 	mp4m := mp4.ParseFile("small.mp4", "en")
 	fragment := ts.CreateHLSFragment(mp4m.Boxes, 1, 2)
 	printFragments(fragment, 10)

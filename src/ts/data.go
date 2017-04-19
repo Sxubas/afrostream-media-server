@@ -77,12 +77,16 @@ func (data *Data) Push(bytes []byte, sizeToPush int) {
 		// Number of pushed bits
 		pushedBits := Min(residualBits, remainingSize)
 
+		// Compute the lastBitIndex and startIndex
+		// Bit at index 0 is the last bit of the bytes
+		lastBitIndex := nBits - remainingSize
+		firstBitIndex := nBits - (remainingSize - pushedBits)
+
 		// Get the corresponding byte to write
-		startIndex := remainingSize
-		endIndex := remainingSize - startIndex
 		writtenByte := GetByte(bytes,
-			startIndex,
-			endIndex) << byte(residualBits - pushedBits)
+			lastBitIndex,
+			firstBitIndex)
+		writtenByte = writtenByte << byte(residualBits - pushedBits)
 
 		// Write byte on Data
 		data.WriteOR(writtenByte)
@@ -140,12 +144,12 @@ func (data *Data) FillTo(pushed byte, offsetBitAddress int) {
 // 		shift			number of shift to add to the resulting byte
 //
 func GetByte(data []byte, lastBitIndex int, firstBitIndex int) byte {
-	lastBitIndexIncluded := lastBitIndex - 1
+	firstBitIndexIncluded := firstBitIndex - 1
 
-	lastByteIndex := lastBitIndexIncluded / 8
-	firstByteIndex := firstBitIndex / 8
-	lastIndexInByte := 8 - uint8(lastBitIndexIncluded% 8)
-	firstIndexInByte := 8 - uint8(firstBitIndex) % 8
+	lastByteIndex := lastBitIndex / 8
+	firstByteIndex := firstBitIndexIncluded / 8
+	lastIndexInByte := uint8(lastBitIndex% 8)
+	firstIndexInByte := uint8(firstBitIndexIncluded) % 8
 
 	// If start and end are on the same byte
 	if firstByteIndex == lastByteIndex {
@@ -167,9 +171,9 @@ func GetByte(data []byte, lastBitIndex int, firstBitIndex int) byte {
 }
 
 // Select part of a byte
-func SelectByte(src byte, start, end uint8) byte {
-	tmp := src << (7 - end)
-	return tmp >> (7 - end + start)
+func SelectByte(src byte, lastIndexInByte, firstIndexInByte uint8) byte {
+	tmp := src << (lastIndexInByte)
+	return tmp >> (lastIndexInByte + firstIndexInByte - 7)
 }
 
 // Get the current byte
