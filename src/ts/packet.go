@@ -70,7 +70,7 @@ func (header Header) ToBytes() (data Data) {
 }
 
 func (pcr PCR) ToBytes() (data Data) {
-	data = *NewData(4)
+	data = *NewData(6)
 	data.PushObj(pcr.ProgramClockReferenceBase, 33)
 	data.PushUInt(0x3f, 6)
 	data.PushObj(pcr.ProgramClockReferenceExtension, 9)
@@ -79,11 +79,10 @@ func (pcr PCR) ToBytes() (data Data) {
 
 func (field AdaptationField) ToBytes() (data Data) {
 	// Compute Adaptation length adding the first byte length
-	adaptationLength := int(field.AdaptationFieldLength + 1)
+	adaptationLength := field.GetAdaptationLength()
+	data = *NewData(int(adaptationLength + 1))
 
-	data = *NewData(int(adaptationLength))
-
-	data.PushObj(field.AdaptationFieldLength, 8)
+	data.PushObj(adaptationLength, 8)
 	data.PushObj(field.DiscontinuityIndicator, 1)
 	data.PushObj(field.RandomAccessIndicator, 1)
 	data.PushObj(field.ElementaryStreamPriorityIndicator, 1)
@@ -91,18 +90,32 @@ func (field AdaptationField) ToBytes() (data Data) {
 	data.PushObj(field.OPCR_Flag, 1)
 	data.PushObj(field.SplicingPointFlag, 1)
 	data.PushObj(field.TransportPrivateDataFlag, 1)
+	data.PushObj(field.AdaptationFieldExtensionFlag, 1)
 
 	if field.PCR_Flag == 1 {
 		data.PushBytes(field.PCR)
 	}
 
 	// Stuffing bytes
-	for data.Offset < adaptationLength {
-
+	for byte(data.Offset) < adaptationLength {
 		data.PushUInt(0xff, 8)
 	}
 
 	return
+}
+
+func (field AdaptationField) GetAdaptationLength() (byte) {
+	if field.AdaptationFieldLength != 0 {
+		return field.AdaptationFieldLength
+	}
+
+	var adaptationLength byte = 1
+
+	if field.PCR_Flag == 1 {
+		adaptationLength += 6
+	}
+
+	return adaptationLength
 }
 
 // Check if the current packet has adaptation field flag activated

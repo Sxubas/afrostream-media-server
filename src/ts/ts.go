@@ -39,11 +39,6 @@ func CreateHLSFragment(mp4m map[string][]interface{}, fragmentNumber uint32, fra
 	}
 
 
-	bytes = make([]Bytes, 1)
-
-	bytes[0] = pmt
-
-	/*
 	// Retrieve start and end to write
 	sampleStart, sampleEnd, baseMediaDecodeTime := GetSampleInfo(mp4m, fragmentNumber, fragmentDuration, isVideo)
 
@@ -90,8 +85,8 @@ func CreateHLSFragment(mp4m map[string][]interface{}, fragmentNumber uint32, fra
 
 		mdat.Offset += 184
 		remainingBytes -= 184
-		bytes[i] = pes
-	}*/
+		bytes[i+3] = pes
+	}
 
 	return
 }

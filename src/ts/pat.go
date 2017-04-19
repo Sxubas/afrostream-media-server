@@ -12,7 +12,7 @@ type ProgramAssociationSection struct {
 	TableID                byte // 1Byte
 	SectionSyntaxIndicator byte
 	SectionLength          uint16 // 12b;
-	TransportStreamID      byte   // 2b
+	TransportStreamID      uint16   // 2Bytes
 	VersionNumber          byte   // 5b
 	CurrentNextIndicator   byte
 	SectionNumber          byte // 1Byte
@@ -21,12 +21,12 @@ type ProgramAssociationSection struct {
 }
 
 type ProgramAssociationSubSection struct {
-	ProgramNumber byte   // 2b
+	ProgramNumber uint16   // 2Bytes
 	ProgramMapID  uint16 // 13b
 }
 
 // To Bytes
-func (pat PAT) Bytes() (data Data) {
+func (pat PAT) ToBytes() (data Data) {
 	data = pat.Packet.ToBytes()
 
 	// Set PointField
@@ -97,9 +97,9 @@ func NewPAT() (pat *PAT) {
 	return
 }
 
-func (section *ProgramAssociationSection) GetSectionLength() (int) {
+func (section *ProgramAssociationSection) GetSectionLength() (uint16) {
 	if section.SectionLength != 0 {
-		return int(section.SectionLength)
+		return section.SectionLength
 	}
 
 	// Compute the section Length

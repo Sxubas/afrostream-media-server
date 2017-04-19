@@ -44,7 +44,7 @@ func (data *Data) PushObj(object interface{}, objectSize int) {
 			data.PushUInt(uint32(object.(uint)), objectSize)
 
 		default:
-			panic("Object size inferior to requested size")
+			panic("Object: Wrong Requested Size")
 		}
 	}
 
@@ -112,7 +112,7 @@ func (data *Data) FillRemaining(byte byte) {
 	lenData := len(data.Data) * 8
 
 	if data.Offset % 8 != 0 {
-		panic("Not aligned data")
+		panic("Not Aligned")
 	}
 
 	for data.Offset != lenData {
@@ -163,7 +163,7 @@ func SelectByte(src byte, start, end uint8) byte {
 func (data *Data) GetCurrentByte() *byte {
 
 	if data.GetByteIndex() >= len(data.Data) {
-		panic("Data: No more memory left")
+		panic("Data: Out Of Memory")
 	}
 
 	return &data.Data[data.GetByteIndex()]
@@ -198,7 +198,7 @@ func NewData(length int) *Data {
 
 func (data Data) PrintBinary() {
 	var i uint32 = 0
-	size := uint32(data.Offset)/8
+	size := uint32(data.Offset)
 	for i < size {
 		PrintLine("%08b    ", i, size, data.Data)
 		i += 16
@@ -207,7 +207,7 @@ func (data Data) PrintBinary() {
 
 func (data Data) PrintHex() {
 	var i uint32 = 0
-	size := uint32(data.Offset)/8
+	size := uint32(data.Offset)
 	for i < size {
 		PrintLine("% 8X   ", i, size, data.Data)
 		i += 16
@@ -216,7 +216,7 @@ func (data Data) PrintHex() {
 
 func (data Data) PrintHexFull() {
 	var i uint32 = 0
-	size := uint32(data.Offset)/8
+	size := uint32(len(data.Data))
 	for i < size {
 		fmt.Printf(" %04X:    ", uint16(i))
 		PrintLine("% 8X   ", i, size, data.Data)
