@@ -96,11 +96,10 @@ func (field AdaptationField) ToBytes() (data Data) {
 		data.PushBytes(field.PCR)
 	}
 
-	// Stuffing bytes
-	for byte(data.Offset) < adaptationLength {
-		data.PushUInt(0xff, 8)
-	}
-
+	// Fill with stuffing bytes
+	// Don't forget the byte counting adaptationLength
+	result := int(adaptationLength + 1) * 8
+	data.FillTo(0xff, result)
 	return
 }
 

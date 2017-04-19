@@ -33,7 +33,7 @@ type OptionalPESHeader struct {
 }
 
 // To bytes
-func (pes PES) Bytes() (data Data) {
+func (pes PES) ToBytes() (data Data) {
 	data = pes.Packet.ToBytes()
 
 	// Optional Header
@@ -42,7 +42,7 @@ func (pes PES) Bytes() (data Data) {
 	}
 
 	// PES Section
-	data.PushBytes(pes.Section)
+	//data.PushBytes(pes.Section)
 
 	if pes.HasPayload() {
 		// Push payload

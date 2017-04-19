@@ -2189,6 +2189,21 @@ func (mdat MdatBox) Bytes() (data []byte) {
 	return
 }
 
+func (mdat MdatBox) ToBytes() (data []byte) {
+	boxSize := mdat.Size
+	data = make([]byte, boxSize)
+	f, err := os.Open(mdat.Filename)
+	if err != nil {
+		panic(err)
+	}
+	_, err = f.ReadAt(data, mdat.Offset)
+	if err != nil {
+		panic(err)
+	}
+
+	return
+}
+
 // Read 8 bytes Box (4 bytes size and 4 bytes box name)
 func readBox(f *os.File, level int) (boxSize uint32, boxName string) {
 	data := make([]byte, 8)

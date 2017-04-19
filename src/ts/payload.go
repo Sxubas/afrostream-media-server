@@ -9,5 +9,6 @@ type Payload struct {
 func (payload Payload) ToBytes() (data Data) {
 	data = *NewData(len(payload.Data))
 	data.Data = payload.Data
+	data.Offset = len(payload.Data) * 8
 	return
 }

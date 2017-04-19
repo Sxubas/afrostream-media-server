@@ -9,12 +9,14 @@ import (
 func main() {
 	mp4m := mp4.ParseFile("small.mp4", "en")
 	fragment := ts.CreateHLSFragment(mp4m.Boxes, 1, 2)
-
-	for i := 0; i < len(fragment); i++ {
-		fmt.Printf("\nPacket-%d\n", i)
-		fragment[i].ToBytes().PrintHexFull()
-	}
+	printFragments(fragment, 4)
 
 	//ts.PrintFragments(&fragments, 10)
 }
 
+func printFragments(fragments []ts.Bytes, max int) {
+	for i := 0; i < ts.Min(len(fragments), max); i++ {
+		fmt.Printf("\nPacket-%d\n", i)
+		fragments[i].ToBytes().PrintHexFull()
+	}
+}

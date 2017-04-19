@@ -56,6 +56,7 @@ func CreateHLSFragment(mp4m map[string][]interface{}, fragmentNumber uint32, fra
 	startStream.PCR_Flag = 1
 	startStream.PCR.ProgramClockReferenceBase = baseMediaDecodeTime
 	startStream.AdaptationFieldControl = 0x02 // Adaptation field only, no payload
+	startStream.AdaptationFieldLength = 183
 
 	numberOfStreamPackets := int(sampleEnd - sampleStart)
 	numberOfPackets := numberOfStreamPackets + 3
@@ -81,10 +82,12 @@ func CreateHLSFragment(mp4m map[string][]interface{}, fragmentNumber uint32, fra
 		}
 
 		// Write 184 bytes
-		pes.Payload.Data = mdat.Bytes()
+		pes.Payload.Data = mdat.ToBytes()
 
 		mdat.Offset += 184
 		remainingBytes -= 184
+
+		pes.ToBytes()
 		bytes[i+3] = pes
 	}
 

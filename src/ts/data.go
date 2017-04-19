@@ -77,7 +77,7 @@ func (data *Data) Push(bytes []byte, sizeToPush int) {
 		// Get the corresponding byte to write
 		writtenByte := GetByte(bytes,
 			bitIndex,
-			bitIndex + pushedBits - 1) << byte(residualBits-pushedBits)
+			bitIndex + pushedBits) << byte(residualBits-pushedBits)
 
 		// Write byte on Data
 		data.WriteOR(writtenByte)
@@ -108,15 +108,20 @@ func (data *Data) Write(byte byte) {
 }
 
 // Fill rest of Data with byte
-func (data *Data) FillRemaining(byte byte) {
+func (data *Data) FillRemaining(pushed byte) {
 	lenData := len(data.Data) * 8
+	data.FillTo(pushed, lenData)
+}
 
-	if data.Offset % 8 != 0 {
-		panic("Not Aligned")
+func (data *Data) FillTo(pushed byte, offsetBitAddress int) {
+	// Jump to next byte
+	restingBits := data.Offset % 8
+	if restingBits != 0 {
+		data.PushObj(byte(pushed), restingBits)
 	}
 
-	for data.Offset != lenData {
-		data.Write(byte)
+	for data.Offset != offsetBitAddress {
+		data.Write(pushed)
 	}
 }
 
@@ -129,10 +134,11 @@ func (data *Data) FillRemaining(byte byte) {
 // 		shift			number of shift to add to the resulting byte
 //
 func GetByte(data []byte, startIndex int, endIndex int) byte {
+	var endIndexIncluded int = endIndex - 1
 	var startIndexByte int = startIndex / 8
-	var endIndexByte int = endIndex / 8
+	var endIndexByte int = (endIndexIncluded) / 8
 	var startIndexInByte = uint8(startIndex % 8)
-	var endIndexInByte = uint8(endIndex % 8)
+	var endIndexInByte = uint8(endIndexIncluded % 8)
 
 	// If start and end are on the same byte
 	if startIndexByte == endIndexByte {
@@ -146,7 +152,7 @@ func GetByte(data []byte, startIndex int, endIndex int) byte {
 		startByte := SelectByte(data[startIndexByte], startIndexInByte, 7)
 
 		// Get second part in the next byte
-		endByte := SelectByte(data[endIndexByte], 0, endIndexInByte-1)
+		endByte := SelectByte(data[endIndexByte], 0, endIndexInByte)
 
 		// Create byte by coupling start and endByte
 		return startByte | (endByte >> shift)
@@ -155,8 +161,8 @@ func GetByte(data []byte, startIndex int, endIndex int) byte {
 
 // Select part of a byte
 func SelectByte(src byte, start, end uint8) byte {
-	tmp := src << (8 - end)
-	return tmp >> (8 - end + start)
+	tmp := src << (7 - end)
+	return tmp >> (7 - end + start)
 }
 
 // Get the current byte
