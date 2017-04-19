@@ -65,19 +65,24 @@ func (data *Data) PushData(dataPushed Data) {
 //		bytesSize		part to write of these bytes
 // Push the object on Data
 func (data *Data) Push(bytes []byte, sizeToPush int) {
+
+	nBits := len(bytes) * 8
+
 	// While there are resulting bits to push
-	bitIndex := 0
-	for bitIndex < sizeToPush {
+	remainingSize := sizeToPush
+	for remainingSize != 0 {
 		// Number of bits in actual Byte
 		residualBits := data.GetResidualBits()
 
 		// Number of pushed bits
-		pushedBits := Min(residualBits, sizeToPush-bitIndex)
+		pushedBits := Min(residualBits, remainingSize)
 
 		// Get the corresponding byte to write
+		startIndex := remainingSize
+		endIndex := remainingSize - startIndex
 		writtenByte := GetByte(bytes,
-			bitIndex,
-			bitIndex + pushedBits) << byte(residualBits-pushedBits)
+			startIndex,
+			endIndex) << byte(residualBits - pushedBits)
 
 		// Write byte on Data
 		data.WriteOR(writtenByte)
@@ -86,7 +91,7 @@ func (data *Data) Push(bytes []byte, sizeToPush int) {
 		data.Offset += pushedBits
 
 		// Update bit index
-		bitIndex += pushedBits
+		remainingSize -= pushedBits
 	}
 
 }
@@ -125,34 +130,36 @@ func (data *Data) FillTo(pushed byte, offsetBitAddress int) {
 	}
 }
 
-// Create byte from start and end indices
+// Create byte from start and end indices, from last bits to first
 //
-// 		startIndex		start index read in bits
-//		endIndex		end index to read in bits,
-// 						startIndex - endIndex < 8
+// 		lastBitIndex	last index read in bits
+//		firstBitIndex	firstBit index to read in bits,
+// 						endIndex - startIndex < 8
+//						Copy from last bits to first
 //
 // 		shift			number of shift to add to the resulting byte
 //
-func GetByte(data []byte, startIndex int, endIndex int) byte {
-	var endIndexIncluded int = endIndex - 1
-	var startIndexByte int = startIndex / 8
-	var endIndexByte int = (endIndexIncluded) / 8
-	var startIndexInByte = uint8(startIndex % 8)
-	var endIndexInByte = uint8(endIndexIncluded % 8)
+func GetByte(data []byte, lastBitIndex int, firstBitIndex int) byte {
+	lastBitIndexIncluded := lastBitIndex - 1
+
+	lastByteIndex := lastBitIndexIncluded / 8
+	firstByteIndex := firstBitIndex / 8
+	lastIndexInByte := 8 - uint8(lastBitIndexIncluded% 8)
+	firstIndexInByte := 8 - uint8(firstBitIndex) % 8
 
 	// If start and end are on the same byte
-	if startIndexByte == endIndexByte {
-		return SelectByte(data[startIndexByte], startIndexInByte, endIndexInByte)
+	if firstByteIndex == lastByteIndex {
+		return SelectByte(data[firstByteIndex], lastIndexInByte, firstIndexInByte)
 	} else {
 
 		// Compute shift from start
-		shift := 8 - startIndexInByte
+		shift := 8 - lastIndexInByte
 
 		// Get first part
-		startByte := SelectByte(data[startIndexByte], startIndexInByte, 7)
+		startByte := SelectByte(data[firstByteIndex], lastIndexInByte, 7)
 
 		// Get second part in the next byte
-		endByte := SelectByte(data[endIndexByte], 0, endIndexInByte)
+		endByte := SelectByte(data[lastByteIndex], 0, firstIndexInByte)
 
 		// Create byte by coupling start and endByte
 		return startByte | (endByte >> shift)

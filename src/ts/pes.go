@@ -46,7 +46,7 @@ func (pes PES) ToBytes() (data Data) {
 
 	if pes.HasPayload() {
 		// Push payload
-		data.PushBytes(pes.Payload)
+ 		data.PushBytes(pes.Payload)
 	}
 
 	// Fill remaining bytes with 0xff
