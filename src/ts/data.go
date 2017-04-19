@@ -196,28 +196,27 @@ func NewData(length int) *Data {
 	return data
 }
 
-func (data *Data) PrintBinary() {
+func (data Data) PrintBinary() {
 	var i uint32 = 0
-	size := uint32(data.Offset)
+	size := uint32(data.Offset)/8
 	for i < size {
 		PrintLine("%08b    ", i, size, data.Data)
 		i += 16
 	}
 }
 
-func (data *Data) PrintHex() {
+func (data Data) PrintHex() {
 	var i uint32 = 0
-	size := uint32(data.Offset)
+	size := uint32(data.Offset)/8
 	for i < size {
 		PrintLine("% 8X   ", i, size, data.Data)
 		i += 16
 	}
 }
 
-func (data *Data) PrintHexFull() {
+func (data Data) PrintHexFull() {
 	var i uint32 = 0
-	size := uint32(data.Offset)
-	fmt.Printf("\nData-Bytes:\n")
+	size := uint32(data.Offset)/8
 	for i < size {
 		fmt.Printf(" %04X:    ", uint16(i))
 		PrintLine("% 8X   ", i, size, data.Data)
