@@ -28,7 +28,7 @@ type ProgramMapSubSection struct {
 }
 
 // To bytes
-func (pmt PMT) Bytes() (data Data) {
+func (pmt PMT) ToBytes() (data Data) {
 	data = pmt.Packet.ToBytes()
 	// Set PointField
 	data.PushObj(pmt.PointField, 8)
@@ -48,35 +48,49 @@ func (pmt PMT) Bytes() (data Data) {
 }
 
 func (section ProgramMapSection) ToBytes() (data Data) {
-	data = *NewData(4)
+	// In general, 13 bytes after sectionLength and 3 bytes before
+	sectionLength := section.GetSectionLength()
+	lenData := int(sectionLength + 3) + 5 * len(section.Sections)
+
+	data = *NewData(lenData)
 
 	data.PushObj(section.TableID, 8)
 	data.PushObj(section.SectionSyntaxIndicator, 1)
-	data.PushObj(0, 1)    // Private
-	data.PushObj(0x03, 2) // Reserved
-	data.PushObj(section.SectionLength, 12)
+	data.PushUInt(0, 1)    // Private
+	data.PushUInt(0x03, 2) // Reserved
+	data.PushUInt(uint32(sectionLength), 12)
 	data.PushObj(section.ProgramNumber, 16)
-	data.PushObj(0x03, 2) // Reserved
+	data.PushUInt(0x03, 2) // Reserved
 	data.PushObj(section.VersionNumber, 5)
 	data.PushObj(section.CurrentNextIndicator, 1)
 	data.PushObj(section.SectionNumber, 8)
 	data.PushObj(section.LastSectionNumber, 8)
-	data.PushObj(0x07, 3) // Reserved
+	data.PushUInt(0x07, 3) // Reserved
 	data.PushObj(section.PCR_PID, 13)
-	data.PushObj(0x0f, 4) // Reserved
+	data.PushUInt(0x0f, 4) // Reserved
 	data.PushObj(section.ProgramInfoLength, 12)
 
+	// 5 Bytes per sub section
 	for programIndex := 0; programIndex < len(section.Sections); programIndex++ {
 		data.PushObj(section.Sections[programIndex].StreamType, 8)
-		data.PushObj(0x07, 3) // Reserved
+		data.PushUInt(0x07, 3) // Reserved
 		data.PushObj(section.Sections[programIndex].ElementaryPID, 13)
-		data.PushObj(0x0f, 4) // Reserved
+		data.PushUInt(0x0f, 4) // Reserved
 		data.PushObj(section.Sections[programIndex].ESInfoLength, 12)
 	}
 
 	data.PushObj(data.GenerateCRC32(), 32)
 
 	return
+}
+
+func (section *ProgramMapSection) GetSectionLength() (int) {
+	if section.SectionLength != 0 {
+		return int(section.SectionLength)
+	}
+
+	// Compute the section Length
+	return 13
 }
 
 // Constructor

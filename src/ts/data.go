@@ -12,6 +12,16 @@ type Data struct {
 	Offset int
 }
 
+// Push int on Data
+func (data *Data) PushUInt(object uint32, objectSize int) {
+	data.PushObj(object, objectSize)
+}
+
+// Push int on Data
+func (data *Data) PushInt(object int64, objectSize int) {
+	data.PushObj(object, objectSize)
+}
+
 // Push object on Data
 //		object 			object to write
 //		objectSize		part to write of this object
@@ -21,7 +31,24 @@ func (data *Data) PushObj(object interface{}, objectSize int) {
 	var buf bytes.Buffer
 	binary.Write(&buf, binary.BigEndian, object)
 	objectBytes := buf.Bytes()
-	data.PushObj(objectBytes, objectSize)
+
+	if len(objectBytes) * 8 < objectSize {
+
+		switch object.(type) {
+		case int:
+			fmt.Println("Warning: Int processed as object")
+			data.PushInt(int64(object.(int)), objectSize)
+
+		case uint:
+			fmt.Println("Warning: UInt processed as object")
+			data.PushUInt(uint32(object.(uint)), objectSize)
+
+		default:
+			panic("Object size inferior to requested size")
+		}
+	}
+
+	data.Push(objectBytes, objectSize)
 	return
 }
 
@@ -30,7 +57,7 @@ func (data *Data) PushAll(bytes []byte) {
 }
 
 func (data *Data) PushData(dataPushed Data) {
-	data.Push(dataPushed.Data, len(dataPushed.Data))
+	data.Push(dataPushed.Data, dataPushed.Offset)
 }
 
 // Write bytes on Data
@@ -50,7 +77,7 @@ func (data *Data) Push(bytes []byte, sizeToPush int) {
 		// Get the corresponding byte to write
 		writtenByte := GetByte(bytes,
 			bitIndex,
-			bitIndex+pushedBits) << byte(residualBits-pushedBits)
+			bitIndex + pushedBits - 1) << byte(residualBits-pushedBits)
 
 		// Write byte on Data
 		data.WriteOR(writtenByte)
@@ -82,7 +109,11 @@ func (data *Data) Write(byte byte) {
 
 // Fill rest of Data with byte
 func (data *Data) FillRemaining(byte byte) {
-	lenData := len(data.Data)
+	lenData := len(data.Data) * 8
+
+	if data.Offset % 8 != 0 {
+		panic("Not aligned data")
+	}
 
 	for data.Offset != lenData {
 		data.Write(byte)
@@ -130,6 +161,11 @@ func SelectByte(src byte, start, end uint8) byte {
 
 // Get the current byte
 func (data *Data) GetCurrentByte() *byte {
+
+	if data.GetByteIndex() >= len(data.Data) {
+		panic("Data: No more memory left")
+	}
+
 	return &data.Data[data.GetByteIndex()]
 }
 

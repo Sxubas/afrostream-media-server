@@ -47,15 +47,19 @@ func (pat PAT) Bytes() (data Data) {
 }
 
 func (section ProgramAssociationSection) ToBytes() (data Data) {
-	data = *NewData(4)
+	// In general, 13 bytes after sectionLength and 3 bytes before
+	sectionLength := section.GetSectionLength()
+	lenData := int(sectionLength + 3) + 3 * len(section.Sections)
+
+	data = *NewData(lenData)
 
 	data.PushObj(section.TableID, 8)
 	data.PushObj(section.SectionSyntaxIndicator, 1)
-	data.PushObj(0, 1)    // Private
-	data.PushObj(0x03, 2) // Reserved
-	data.PushObj(section.SectionLength, 12)
+	data.PushUInt(0, 1)    // Private
+	data.PushUInt(0x03, 2) // Reserved
+	data.PushObj(sectionLength, 12)
 	data.PushObj(section.TransportStreamID, 16)
-	data.PushObj(0x03, 2) // Reserved
+	data.PushUInt(0x03, 2) // Reserved
 	data.PushObj(section.VersionNumber, 5)
 	data.PushObj(section.CurrentNextIndicator, 1)
 	data.PushObj(section.SectionNumber, 8)
@@ -63,7 +67,7 @@ func (section ProgramAssociationSection) ToBytes() (data Data) {
 
 	for programIndex := 0; programIndex < len(section.Sections); programIndex++ {
 		data.PushObj(section.Sections[programIndex].ProgramNumber, 16)
-		data.PushObj(0x07, 3)                                         // Reserved
+		data.PushUInt(0x07, 3)                                         // Reserved
 		data.PushObj(section.Sections[programIndex].ProgramMapID, 13) // Or Network_PID
 	}
 
@@ -91,4 +95,13 @@ func NewPAT() (pat *PAT) {
 	pat.Section.Sections[0].ProgramMapID = 4096
 
 	return
+}
+
+func (section *ProgramAssociationSection) GetSectionLength() (int) {
+	if section.SectionLength != 0 {
+		return int(section.SectionLength)
+	}
+
+	// Compute the section Length
+	return 9
 }

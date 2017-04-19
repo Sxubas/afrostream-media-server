@@ -73,7 +73,7 @@ func (header Header) ToBytes() (data Data) {
 func (pcr PCR) ToBytes() (data Data) {
 	data = *NewData(4)
 	data.PushObj(pcr.ProgramClockReferenceBase, 33)
-	data.PushObj(0x3f, 6)
+	data.PushUInt(0x3f, 6)
 	data.PushObj(pcr.ProgramClockReferenceExtension, 9)
 	return
 }
@@ -100,7 +100,7 @@ func (field AdaptationField) ToBytes() (data Data) {
 	// Stuffing bytes
 	for data.Offset < adaptationLength {
 
-		data.PushObj(0xff, 8)
+		data.PushUInt(0xff, 8)
 	}
 
 	return
