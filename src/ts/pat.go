@@ -71,7 +71,15 @@ func (section ProgramAssociationSection) ToBytes() (data Data) {
 		data.PushObj(section.Sections[programIndex].ProgramMapID, 13) // Or Network_PID
 	}
 
-	data.PushObj(data.GenerateCRC32(), 32)
+	crc32 := data.GenerateCRC32ToOffset()
+	data.PushObj(crc32, 32)
+	data.FillRemaining(0Xff)
+	data.PrintHex()
+	//474000100000b00d0001c100000001f000
+	//0000b00d0001c100000001f000
+	//00b00d0001c100000001f000
+	//0001c100000001f000
+	//00b00d0001c10000
 
 	return
 }
@@ -86,6 +94,7 @@ func NewPAT() (pat *PAT) {
 
 	pat.Section.SectionSyntaxIndicator = 1
 	pat.Section.SectionLength = 13
+	pat.Section.TransportStreamID = 1
 	pat.Section.CurrentNextIndicator = 1
 
 	pat.Section.Sections = make([]ProgramAssociationSubSection, 1)

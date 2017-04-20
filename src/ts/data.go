@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"hash/crc32"
 )
+// Default - MPEG2 CRC32 Table
+var UsedCRC32Table *crc32.Table = crc32.MakeTable(0x4C11DB7)
 
 type Data struct {
 	Data   []byte
@@ -215,7 +217,7 @@ func NewData(length int) *Data {
 
 func (data Data) PrintBinary() {
 	var i uint32 = 0
-	size := uint32(data.Offset)
+	size := uint32(len(data.Data))
 	for i < size {
 		PrintLine("%08b    ", i, size, data.Data)
 		i += 16
@@ -224,9 +226,9 @@ func (data Data) PrintBinary() {
 
 func (data Data) PrintHex() {
 	var i uint32 = 0
-	size := uint32(data.Offset)
+	size := uint32(len(data.Data))
 	for i < size {
-		PrintLine("% 8X   ", i, size, data.Data)
+		PrintLine("% 8x   ", i, size, data.Data)
 		i += 16
 	}
 }
@@ -235,8 +237,8 @@ func (data Data) PrintHexFull() {
 	var i uint32 = 0
 	size := uint32(len(data.Data))
 	for i < size {
-		fmt.Printf(" %04X:    ", uint16(i))
-		PrintLine("% 8X   ", i, size, data.Data)
+		fmt.Printf(" %04x:    ", uint16(i))
+		PrintLine("% 8x   ", i, size, data.Data)
 		i += 16
 	}
 }
@@ -250,6 +252,10 @@ func PrintLine(format string, start uint32, size uint32, bytes []byte) {
 	fmt.Printf("\n")
 }
 
+func (data *Data) GenerateCRC32ToOffset() uint32 {
+	return crc32.Checksum(data.Data[0:data.GetByteIndex()], UsedCRC32Table)
+}
+
 func (data *Data) GenerateCRC32() uint32 {
-	return crc32.Checksum(data.Data, crc32.IEEETable)
+	return crc32.Checksum(data.Data, UsedCRC32Table)
 }
