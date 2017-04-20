@@ -49,8 +49,8 @@ func (pmt PMT) ToBytes() (data Data) {
 
 func (section ProgramMapSection) ToBytes() (data Data) {
 	// In general, 13 bytes after sectionLength and 3 bytes before
-	sectionLength := section.GetSectionLength()
-	lenData := int(sectionLength + 3) + 5 * len(section.Sections)
+	sectionLength := section.GetSectionLength()+ 5 * len(section.Sections)
+	lenData := int(sectionLength + 3)
 
 	data = *NewData(lenData)
 
@@ -79,7 +79,10 @@ func (section ProgramMapSection) ToBytes() (data Data) {
 		data.PushObj(section.Sections[programIndex].ESInfoLength, 12)
 	}
 
-	data.PushObj(data.GenerateCRC32(), 32)
+	crc32 := data.GenerateCRC32ToOffset()
+	data.PushObj(crc32, 32)
+
+	data.FillRemaining(0xff)
 
 	return
 }
@@ -102,6 +105,7 @@ func NewPMT(PCR_PID uint16) (pmt *PMT) {
 	pmt.AdaptationFieldControl = 1
 
 	pmt.Section.TableID = 2
+	pmt.Section.ProgramNumber = 1
 	pmt.Section.SectionSyntaxIndicator = 1
 	pmt.Section.SectionLength = 13
 	pmt.Section.CurrentNextIndicator = 1
@@ -115,9 +119,9 @@ func NewPMT(PCR_PID uint16) (pmt *PMT) {
 	pmt.Section.Sections[0].ESInfoLength = 0
 
 	// Register audio stream
-	pmt.Section.Sections[0].StreamType = 15
-	pmt.Section.Sections[0].ElementaryPID = 257
-	pmt.Section.Sections[0].ESInfoLength = 0 // 6b
+	pmt.Section.Sections[1].StreamType = 15
+	pmt.Section.Sections[1].ElementaryPID = 257
+	pmt.Section.Sections[1].ESInfoLength = 0 // 6b
 
 	return
 }

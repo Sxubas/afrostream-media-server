@@ -33,9 +33,9 @@ func CreateHLSFragment(mp4m map[string][]interface{}, fragmentNumber uint32, fra
 	}
 
 	if isVideo {
-		pmt = *NewPMT(255)
-	} else {
 		pmt = *NewPMT(256)
+	} else {
+		pmt = *NewPMT(255)
 	}
 
 
@@ -53,6 +53,7 @@ func CreateHLSFragment(mp4m map[string][]interface{}, fragmentNumber uint32, fra
 	// Get the PCR for this element
 	// Create first element with no payload
 	startStream := NewPes()
+	startStream.PID = 256
 	startStream.PCR_Flag = 1
 	startStream.PCR.ProgramClockReferenceBase = baseMediaDecodeTime
 	startStream.AdaptationFieldControl = 0x02 // Adaptation field only, no payload
@@ -71,6 +72,7 @@ func CreateHLSFragment(mp4m map[string][]interface{}, fragmentNumber uint32, fra
 	// For i and next ... Write bytes
 	for i := 0; i < numberOfStreamPackets; i++ {
 		pes := NewPes()
+		pes.PID = 256
 		pes.AdaptationFieldControl = 0x01 // No Adaptation field, payload only
 		pes.ContinuityCounter = byte(i % 16)
 
