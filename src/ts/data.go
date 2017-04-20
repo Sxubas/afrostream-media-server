@@ -7,7 +7,7 @@ import (
 	"hash/crc32"
 )
 // Default - MPEG2 CRC32 Table
-var UsedCRC32Table *crc32.Table = crc32.MakeTable(0x4C11DB7)
+var UsedCRC32Table *crc32.Table = crc32.MakeTable(0x04C11DB7)
 
 type Data struct {
 	Data   []byte

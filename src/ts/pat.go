@@ -72,6 +72,8 @@ func (section ProgramAssociationSection) ToBytes() (data Data) {
 	}
 
 	crc32 := data.GenerateCRC32ToOffset()
+
+
 	data.PushObj(crc32, 32)
 	data.FillRemaining(0Xff)
 	data.PrintHex()
