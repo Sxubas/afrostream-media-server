@@ -4,10 +4,8 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"hash/crc32"
+	"crc"
 )
-// Default - MPEG2 CRC32 Table
-var UsedCRC32Table *crc32.Table = crc32.MakeTable(0x04C11DB7)
 
 type Data struct {
 	Data   []byte
@@ -253,9 +251,9 @@ func PrintLine(format string, start uint32, size uint32, bytes []byte) {
 }
 
 func (data *Data) GenerateCRC32ToOffset() uint32 {
-	return crc32.Checksum(data.Data[0:data.GetByteIndex()], UsedCRC32Table)
+	return crc.ComputeCRC32MPEG(data.Data[0:data.GetByteIndex()])
 }
 
 func (data *Data) GenerateCRC32() uint32 {
-	return crc32.Checksum(data.Data, UsedCRC32Table)
+	return crc.ComputeCRC32MPEG(data.Data)
 }
