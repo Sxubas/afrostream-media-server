@@ -57,7 +57,7 @@ func (data *Data) PushAll(bytes []byte) {
 }
 
 func (data *Data) PushData(dataPushed Data) {
-	data.Push(dataPushed.Data, dataPushed.Offset)
+	data.Push(dataPushed.Data, len(dataPushed.Data) * 8)
 }
 
 // Write bytes on Data

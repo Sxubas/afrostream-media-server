@@ -49,7 +49,7 @@ func (pat PAT) ToBytes() (data Data) {
 func (section ProgramAssociationSection) ToBytes() (data Data) {
 	// In general, 13 bytes after sectionLength and 3 bytes before
 	sectionLength := section.GetSectionLength()
-	lenData := int(sectionLength + 3) + 3 * len(section.Sections)
+	lenData := int(sectionLength + 3) + 4 * len(section.Sections)
 
 	data = *NewData(lenData)
 
@@ -67,7 +67,7 @@ func (section ProgramAssociationSection) ToBytes() (data Data) {
 
 	for programIndex := 0; programIndex < len(section.Sections); programIndex++ {
 		data.PushObj(section.Sections[programIndex].ProgramNumber, 16)
-		data.PushUInt(0x07, 3)                                         // Reserved
+		data.PushUInt(0x07, 3) // Reserved
 		data.PushObj(section.Sections[programIndex].ProgramMapID, 13) // Or Network_PID
 	}
 
@@ -103,5 +103,5 @@ func (section *ProgramAssociationSection) GetSectionLength() (uint16) {
 	}
 
 	// Compute the section Length
-	return 9
+	return 8
 }

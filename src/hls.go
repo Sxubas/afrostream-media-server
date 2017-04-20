@@ -2,19 +2,21 @@ package main
 
 import (
 	"ts"
-	"mp4"
 	"fmt"
 	"os"
 )
 
 func main() {
-	data := ts.NewData(4)
-	data.PushUInt(0x03, 2)
+	//data := ts.NewData(4)
+	//data.PushUInt(0x03, 2)
 
-	mp4m := mp4.ParseFile("small.mp4", "en")
-	fragment := ts.CreateHLSFragment(mp4m.Boxes, 1, 2)
-	printFragments(fragment, 10)
-	writeBytes("sample.ts", fragment)
+	pat := ts.NewPAT()
+	pat.ToBytes().PrintHexFull()
+
+	//mp4m := mp4.ParseFile("small.mp4", "en")
+	//fragment := ts.CreateHLSFragment(mp4m.Boxes, 1, 2)
+	//printFragments(fragment, 1)
+	//writeBytes("sample.ts", fragment)
 	//ts.PrintFragments(&fragments, 10)
 }
 
