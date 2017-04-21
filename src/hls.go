@@ -8,17 +8,6 @@ import (
 )
 
 func main() {
-	startStream := ts.NewPes()
-	startStream.PID = 256
-	startStream.PCR_Flag = 1
-	startStream.PayloadUnitStartIndicator = 1
-	startStream.RandomAccessIndicator = 1
-	startStream.PCR.BaseMediaDecodeTime = 6300 //baseMediaDecodeTime
-	startStream.AdaptationFieldControl = 0x03      // Adaptation field only, no payload
-	startStream.AdaptationFieldLength = 7
-	bytes := startStream.ToBytes()
-	bytes.PrintHexFull()
-
 	mp4m := mp4.ParseFile("small.mp4", "en")
 	fragment := ts.CreateHLSFragment(mp4m.Boxes, 1, 10)
 	printFragments(fragment, 10)

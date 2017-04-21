@@ -56,11 +56,14 @@ func CreateHLSFragment(mp4m map[string][]interface{}, fragmentNumber uint32, fra
 	startStream := NewPes()
 	startStream.PID = 256
 	startStream.PCR_Flag = 1
-	startStream.PayloadUnitStartIndicator = 1
+	startStream.PayloadUnitStartIndicator = 0
 	startStream.RandomAccessIndicator = 1
-	startStream.PCR.BaseMediaDecodeTime = 6300 //baseMediaDecodeTime
-	startStream.AdaptationFieldControl = 0x03      // Adaptation field only, no payload
+	startStream.PCR.BaseMediaDecodeTime = baseMediaDecodeTime
+	startStream.AdaptationFieldControl = 0x02      // Adaptation field only, no payload
 	startStream.AdaptationFieldLength = 7
+
+	startStream.Section.PacketStartCodePrefix = 1
+	startStream.Section.StreamId = 224
 
 	numberOfStreamPackets := int(sampleEnd - sampleStart)
 	numberOfPackets := numberOfStreamPackets + 3
@@ -69,7 +72,6 @@ func CreateHLSFragment(mp4m map[string][]interface{}, fragmentNumber uint32, fra
 	bytes[0] = NewPAT()
 	bytes[1] = pmt
 	bytes[2] = startStream
-	startStream.ToBytes()
 
 	remainingBytes := mdat.Size
 

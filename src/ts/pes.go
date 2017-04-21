@@ -42,12 +42,14 @@ func (pes PES) ToBytes() (data Data) {
 	}
 
 	// PES Section
-	data.PushBytes(pes.Section)
+	if pes.PayloadUnitStartIndicator == 1 {
+		data.PushBytes(pes.Section)
+	}
 
-	//if pes.HasPayload() {
-	//	// Push payload
- 	//	data.PushBytes(pes.Payload)
-	//}
+	if pes.HasPayload() {
+		// Push payload
+ 		data.PushBytes(pes.Payload)
+	}
 
 	// Fill remaining bytes with 0xff
 	data.FillRemaining(0xff)
