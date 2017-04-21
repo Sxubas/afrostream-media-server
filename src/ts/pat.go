@@ -104,6 +104,27 @@ func NewPAT() (pat *PAT) {
 	return
 }
 
+func NewDebugPAT() (pat *PAT) {
+	pat = new(PAT)
+
+	pat.PID = 0
+	pat.PayloadUnitStartIndicator = 1
+	pat.AdaptationFieldControl = 1
+
+	pat.Section.SectionSyntaxIndicator = 1
+	pat.Section.SectionLength = 13
+	pat.Section.TransportStreamID = 1
+	pat.Section.CurrentNextIndicator = 1
+
+	pat.Section.Sections = make([]ProgramAssociationSubSection, 1)
+
+	// Set PMT PID
+	pat.Section.Sections[0].ProgramNumber = 1
+	pat.Section.Sections[0].ProgramMapID = 4096
+
+	return
+}
+
 func (section *ProgramAssociationSection) GetSectionLength() (uint16) {
 	if section.SectionLength != 0 {
 		return section.SectionLength

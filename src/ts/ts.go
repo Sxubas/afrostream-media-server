@@ -97,6 +97,82 @@ func CreateHLSFragment(mp4m map[string][]interface{}, fragmentNumber uint32, fra
 	return
 }
 
+func CreateHLSFragmentDebug(mp4m map[string][]interface{}, fragmentNumber uint32, fragmentDuration uint32) (bytes []Bytes) {
+
+	// Debug Init
+	baseMediaDecodeTime := uint64(63000)
+	numberOfStreamPackets := 298
+	mdat := mp4m["mdat"][0].(mp4.MdatBox)
+	mdat.Offset = 172
+	numberOfPackets := numberOfStreamPackets + 2
+	bytes = make([]Bytes, numberOfPackets)
+
+	// Start debugging
+	bytes[0] = NewDebugPAT()
+	bytes[1] = NewDebugPMT()
+
+	streamBytes := createDebugStream(numberOfStreamPackets, baseMediaDecodeTime)
+	fillDebugStream(mdat, streamBytes)
+
+	// Copying packets
+	for i,packet := range streamBytes {
+		bytes[i + 2] = packet
+	}
+
+	return
+}
+
+func createDebugStream(numberOfStreamPackets int, baseMediaDecodeTime uint64) (bytes []Bytes) {
+	bytes = make([]Bytes, numberOfStreamPackets)
+
+	bytes[0] = NewStartStreamDebug(baseMediaDecodeTime)
+
+	for i := 1; i < int(numberOfStreamPackets); i++ {
+		pes := NewPes()
+		pes.PID = 256
+		pes.AdaptationFieldControl = 0x01 // No Adaptation field, payload only
+		pes.ContinuityCounter = byte(i % 16)
+		bytes[i] = pes
+	}
+
+	return
+}
+func fillDebugStream(mdat mp4.MdatBox, bytes []Bytes) {
+
+	remainingBytes := mdat.Size
+
+	// First stream packet
+	startBytes := []byte{0x00, 0x00, 0x01, 0xe0, 0x00, 0x00, 0x80, 0xc0, 0x0a, 0x31, 0x00, 0x09, 0x07, 0x4d, 0x11, 0x00, 0x07, 0xd8, 0x61, 0x00, 0x00, 0x00, 0x01, 0x09, 0xf0, 0x00, 0x00, 0x00, 0x01}
+	lenToWrite := uint32(176 - len(startBytes))
+	mdat.Size = Min32(lenToWrite, remainingBytes)
+	startStream := bytes[0].(*PES)
+
+	data := NewData(176)
+	data.PushAll(startBytes)
+	toBytes := mdat.ToBytes()
+	data.PushAll(toBytes)
+	data.PrintHexFull()
+	startStream.Payload.Data = data.Data
+	remainingBytes -= lenToWrite
+
+	startStream.ToBytes()
+
+	for i := 1; i < len(bytes); i++ {
+		// Get max to write
+		mdat.Size = Min32(184, remainingBytes)
+		if remainingBytes < 0 {
+			panic("error no remaining Bytes to write")
+		}
+
+		// Write 184 bytes
+		pes := bytes[i].(*PES)
+		pes.Payload.Data = mdat.ToBytes()
+
+		mdat.Offset += 184
+		remainingBytes -= 184
+	}
+}
+
 func GetSampleInfo(mp4m map[string][]interface{},
 	fragmentNumber uint32,
 	fragmentDuration uint32,

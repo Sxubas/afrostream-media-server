@@ -53,7 +53,7 @@ func (data *Data) PushObj(object interface{}, objectSize int) {
 }
 
 func (data *Data) PushAll(bytes []byte) {
-	data.Push(bytes, len(bytes))
+	data.Push(bytes, len(bytes)*8)
 }
 
 func (data *Data) PushData(dataPushed Data) {

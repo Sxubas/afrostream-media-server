@@ -186,7 +186,9 @@ func NewPMT(PCR_PID uint16) (pmt *PMT) {
 func NewDebugPMT() (pmt *PMT) {
 	pmt = new(PMT)
 
-	pmt.PID = 32
+	usingAudio := false
+
+	pmt.PID = 4096
 	pmt.PayloadUnitStartIndicator = 1
 	pmt.AdaptationFieldControl = 1
 
@@ -194,25 +196,31 @@ func NewDebugPMT() (pmt *PMT) {
 	pmt.Section.ProgramNumber = 1
 	pmt.Section.SectionSyntaxIndicator = 1
 	pmt.Section.CurrentNextIndicator = 1
-	pmt.Section.PCR_PID = 48
+	pmt.Section.PCR_PID = 256
 
-	pmt.Section.Sections = make([]ProgramMapSubSection, 1)
+	if usingAudio {
+		pmt.Section.Sections = make([]ProgramMapSubSection, 2)
+	} else {
+		pmt.Section.Sections = make([]ProgramMapSubSection, 1)
+	}
 
 	// Register video stream
 	pmt.Section.Sections[0].StreamType = 27
-	pmt.Section.Sections[0].ElementaryPID = 48
+	pmt.Section.Sections[0].ElementaryPID = 256
 	pmt.Section.Sections[0].ESInfoLength = 0
-	//
-	//// Register audio stream
-	//pmt.Section.Sections[1].StreamType = 15
-	//pmt.Section.Sections[1].ElementaryPID = 257
-	//pmt.Section.Sections[1].ESInfoLength = 6
-	//
-	//descriptor := new(DescriptorData)
-	//descriptor.DescriptorTag = 10
-	//descriptor.DescriptorLength = 4
-	//descriptor.DescriptorData = []byte{0x75, 0x6e, 0x64, 0x00}
-	//
-	//pmt.Section.Sections[1].Descriptor = descriptor
+
+	// Register audio stream
+	if usingAudio {
+		pmt.Section.Sections[1].StreamType = 15
+		pmt.Section.Sections[1].ElementaryPID = 257
+		pmt.Section.Sections[1].ESInfoLength = 6
+
+		descriptor := new(DescriptorData)
+		descriptor.DescriptorTag = 10
+		descriptor.DescriptorLength = 4
+		descriptor.DescriptorData = []byte{0x75, 0x6e, 0x64, 0x00}
+
+		pmt.Section.Sections[1].Descriptor = descriptor
+	}
 	return
 }
