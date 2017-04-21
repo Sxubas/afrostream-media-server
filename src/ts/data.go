@@ -148,8 +148,8 @@ func GetByte(data []byte, lastBitIndex int, firstBitIndex int) byte {
 
 	lastByteIndex := lastBitIndex / 8
 	firstByteIndex := firstBitIndexIncluded / 8
-	lastIndexInByte := uint8(lastBitIndex% 8)
-	firstIndexInByte := uint8(firstBitIndexIncluded) % 8
+	lastIndexInByte := byte(lastBitIndex% 8)
+	firstIndexInByte := byte(firstBitIndexIncluded) % 8
 
 	// If start and end are on the same byte
 	if firstByteIndex == lastByteIndex {
@@ -157,23 +157,23 @@ func GetByte(data []byte, lastBitIndex int, firstBitIndex int) byte {
 	} else {
 
 		// Compute shift from start
-		shift := 8 - lastIndexInByte
+		shift := firstIndexInByte + 1
 
 		// Get first part
-		startByte := SelectByte(data[firstByteIndex], lastIndexInByte, 7)
+		startByte := SelectByte(data[lastByteIndex], lastIndexInByte, 7)
 
 		// Get second part in the next byte
-		endByte := SelectByte(data[lastByteIndex], 0, firstIndexInByte)
+		endByte := SelectByte(data[firstByteIndex], 0, firstIndexInByte)
 
 		// Create byte by coupling start and endByte
-		return startByte | (endByte >> shift)
+		return (startByte << shift) | endByte
 	}
 }
 
 // Select part of a byte
 func SelectByte(src byte, lastIndexInByte, firstIndexInByte uint8) byte {
 	tmp := src << (lastIndexInByte)
-	return tmp >> (lastIndexInByte + firstIndexInByte - 7)
+	return tmp >> (lastIndexInByte + 7 - firstIndexInByte)
 }
 
 // Get the current byte

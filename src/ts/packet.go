@@ -69,9 +69,13 @@ func (header Header) ToBytes() (data Data) {
 	return
 }
 
+func (packet Packet) Size() (int) {
+	return 188
+}
+
 func (pcr PCR) ToBytes() (data Data) {
 	data = *NewData(6)
-	data.PushObj(pcr.ProgramClockReferenceBase, 33)
+	data.PushObj(uint64(pcr.ProgramClockReferenceBase / 300), 33)
 	data.PushUInt(0x3f, 6)
 	data.PushObj(pcr.ProgramClockReferenceExtension, 9)
 	return

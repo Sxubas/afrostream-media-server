@@ -32,16 +32,17 @@ func CreateHLSFragment(mp4m map[string][]interface{}, fragmentNumber uint32, fra
 		isVideo = true
 	}
 
-	if isVideo {
-		pmt = *NewPMT(256)
-	} else {
-		pmt = *NewPMT(255)
-	}
+	//if isVideo {
+	//	pmt = *NewPMT(256)
+	//} else {
+	//	pmt = *NewPMT(255)
+	//}
 
+	pmt = *NewDebugPMT()
 
 	// Retrieve start and end to write
 	sampleStart, sampleEnd, baseMediaDecodeTime := GetSampleInfo(mp4m, fragmentNumber, fragmentDuration, isVideo)
-
+	_ = baseMediaDecodeTime
 	// Compute offset
 	stsz := mp4m["moov.trak.mdia.minf.stbl.stsz"][0].(mp4.StszBox)
 	mdat := mp4m["mdat"][0].(mp4.MdatBox)
@@ -55,9 +56,11 @@ func CreateHLSFragment(mp4m map[string][]interface{}, fragmentNumber uint32, fra
 	startStream := NewPes()
 	startStream.PID = 256
 	startStream.PCR_Flag = 1
-	startStream.PCR.ProgramClockReferenceBase = baseMediaDecodeTime
-	startStream.AdaptationFieldControl = 0x02 // Adaptation field only, no payload
-	startStream.AdaptationFieldLength = 183
+	startStream.PayloadUnitStartIndicator = 1
+	startStream.RandomAccessIndicator = 1
+	startStream.PCR.ProgramClockReferenceBase = 18900000 //baseMediaDecodeTime
+	startStream.AdaptationFieldControl = 0x03 // Adaptation field only, no payload
+	startStream.AdaptationFieldLength = 7
 
 	numberOfStreamPackets := int(sampleEnd - sampleStart)
 	numberOfPackets := numberOfStreamPackets + 3
@@ -66,6 +69,7 @@ func CreateHLSFragment(mp4m map[string][]interface{}, fragmentNumber uint32, fra
 	bytes[0] = NewPAT()
 	bytes[1] = pmt
 	bytes[2] = startStream
+	startStream.ToBytes()
 
 	remainingBytes := mdat.Size
 
@@ -74,7 +78,7 @@ func CreateHLSFragment(mp4m map[string][]interface{}, fragmentNumber uint32, fra
 		pes := NewPes()
 		pes.PID = 256
 		pes.AdaptationFieldControl = 0x01 // No Adaptation field, payload only
-		pes.ContinuityCounter = byte(i % 16)
+		pes.ContinuityCounter = byte(i + 1 % 16)
 
 		// Get max to write
 		mdat.Size = Min32(184, remainingBytes)

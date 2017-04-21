@@ -49,9 +49,7 @@ func (pat PAT) ToBytes() (data Data) {
 func (section ProgramAssociationSection) ToBytes() (data Data) {
 	// In general, 13 bytes after sectionLength and 3 bytes before
 	sectionLength := section.GetSectionLength()
-	lenData := int(sectionLength + 3) + 4 * len(section.Sections)
-
-	data = *NewData(lenData)
+	data = *NewData(section.Size())
 
 	data.PushObj(section.TableID, 8)
 	data.PushObj(section.SectionSyntaxIndicator, 1)
@@ -77,6 +75,11 @@ func (section ProgramAssociationSection) ToBytes() (data Data) {
 	data.FillRemaining(0Xff)
 
 	return
+}
+
+func (section ProgramAssociationSection) Size() (int) {
+	return 	int(section.GetSectionLength() + 3) + 4 * len(section.Sections)
+
 }
 
 // Constructor
