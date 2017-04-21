@@ -42,7 +42,11 @@ func (pes PES) ToBytes() (data Data) {
 	}
 
 	// PES Section
-	if pes.PayloadUnitStartIndicator == 1 {
+	finalLen := data.Offset
+	if pes.HasPayload() {
+		finalLen += len(pes.Payload.Data) * 8
+	}
+	if finalLen - len(data.Data) * 8 > pes.Section.Size() * 8 {
 		data.PushBytes(pes.Section)
 	}
 
@@ -67,7 +71,28 @@ func (section PESSection) ToBytes() (data Data) {
 	return
 }
 
+func (section PESSection) Size() int {
+	return int(6 + section.PES_PacketLength)
+}
+
 func NewPes() (pes *PES) {
 	pes = new(PES)
+	return
+}
+
+func NewStartStream(baseMediaDecodeTime uint64) (pes *PES) {
+	pes = NewPes()
+
+	pes.PID = 48
+	pes.PCR_Flag = 1
+	pes.PayloadUnitStartIndicator = 0
+	pes.RandomAccessIndicator = 1
+	pes.PCR.BaseMediaDecodeTime = baseMediaDecodeTime
+	pes.AdaptationFieldControl = 0x02 // Adaptation field only, no payload
+	pes.AdaptationFieldLength = 183
+
+	pes.Section.PacketStartCodePrefix = 1
+	pes.Section.StreamId = 224
+
 	return
 }

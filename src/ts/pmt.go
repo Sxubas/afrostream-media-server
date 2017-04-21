@@ -186,7 +186,7 @@ func NewPMT(PCR_PID uint16) (pmt *PMT) {
 func NewDebugPMT() (pmt *PMT) {
 	pmt = new(PMT)
 
-	pmt.PID = 4096
+	pmt.PID = 32
 	pmt.PayloadUnitStartIndicator = 1
 	pmt.AdaptationFieldControl = 1
 
@@ -194,13 +194,13 @@ func NewDebugPMT() (pmt *PMT) {
 	pmt.Section.ProgramNumber = 1
 	pmt.Section.SectionSyntaxIndicator = 1
 	pmt.Section.CurrentNextIndicator = 1
-	pmt.Section.PCR_PID = 256
+	pmt.Section.PCR_PID = 48
 
 	pmt.Section.Sections = make([]ProgramMapSubSection, 1)
 
 	// Register video stream
 	pmt.Section.Sections[0].StreamType = 27
-	pmt.Section.Sections[0].ElementaryPID = 256
+	pmt.Section.Sections[0].ElementaryPID = 48
 	pmt.Section.Sections[0].ESInfoLength = 0
 	//
 	//// Register audio stream

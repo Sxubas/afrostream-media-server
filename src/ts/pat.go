@@ -99,7 +99,7 @@ func NewPAT() (pat *PAT) {
 
 	// Set PMT PID
 	pat.Section.Sections[0].ProgramNumber = 1
-	pat.Section.Sections[0].ProgramMapID = 4096
+	pat.Section.Sections[0].ProgramMapID = 32
 
 	return
 }
