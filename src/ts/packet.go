@@ -36,8 +36,8 @@ type AdaptationField struct {
 
 type PCR struct {
 	Bytes
-	ProgramClockReferenceBase      uint64 // 33b;
-	ProgramClockReferenceExtension uint16 // 9b
+	BaseMediaDecodeTime uint64 // 33b;
+	Extension           uint16 // 9b
 }
 
 // Bytes
@@ -75,9 +75,12 @@ func (packet Packet) Size() (int) {
 
 func (pcr PCR) ToBytes() (data Data) {
 	data = *NewData(6)
-	data.PushObj(uint64(pcr.ProgramClockReferenceBase / 300), 33)
+
+	// PCR = Base * 300 + extension
+	data.PushObj(pcr.BaseMediaDecodeTime, 33)
 	data.PushUInt(0x3f, 6)
-	data.PushObj(pcr.ProgramClockReferenceExtension, 9)
+	data.PushObj(pcr.Extension, 9)
+
 	return
 }
 
