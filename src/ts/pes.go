@@ -46,7 +46,7 @@ func (pes PES) ToBytes() (data Data) {
 	if pes.HasPayload() {
 		finalLen += len(pes.Payload.Data) * 8
 	}
-	if finalLen - len(data.Data) * 8 > pes.Section.Size() * 8 {
+	if finalLen - len(data.Data) * 8 >= pes.Section.Size() * 8 {
 		data.PushBytes(pes.Section)
 	}
 
@@ -90,6 +90,23 @@ func NewStartStream(baseMediaDecodeTime uint64) (pes *PES) {
 	pes.PCR.BaseMediaDecodeTime = baseMediaDecodeTime
 	pes.AdaptationFieldControl = 0x02 // Adaptation field only, no payload
 	pes.AdaptationFieldLength = 183
+
+	pes.Section.PacketStartCodePrefix = 1
+	pes.Section.StreamId = 224
+
+	return
+}
+
+func NewStartStreamDebug(baseMediaDecodeTime uint64) (pes *PES) {
+	pes = NewPes()
+
+	pes.PID = 256
+	pes.PCR_Flag = 1
+	pes.PayloadUnitStartIndicator = 1
+	pes.RandomAccessIndicator = 1
+	pes.PCR.BaseMediaDecodeTime = baseMediaDecodeTime
+	pes.AdaptationFieldControl = 0x03 // Adaptation field + payload
+	pes.AdaptationFieldLength = 7
 
 	pes.Section.PacketStartCodePrefix = 1
 	pes.Section.StreamId = 224
