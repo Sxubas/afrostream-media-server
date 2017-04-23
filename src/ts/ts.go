@@ -151,9 +151,10 @@ func fillDebugStream(mdat mp4.MdatBox, bytes []Bytes) {
 	data.PushAll(startBytes)
 	toBytes := mdat.ToBytes()
 	data.PushAll(toBytes)
-	data.PrintHexFull()
 	startStream.Payload.Data = data.Data
+
 	remainingBytes -= lenToWrite
+	mdat.Offset += int64(lenToWrite)
 
 	startStream.ToBytes()
 

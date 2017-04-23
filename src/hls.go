@@ -25,7 +25,7 @@ func main() {
 func launch() {
 	mp4m := mp4.ParseFile("small.mp4", "en")
 	fragment := ts.CreateHLSFragmentDebug(mp4m.Boxes, 1, 10)
-	//printFragments(fragment, 10)
+	printFragments(fragment, 10)
 	writeBytes("sample.ts", fragment)
 }
 

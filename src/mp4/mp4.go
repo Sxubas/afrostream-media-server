@@ -3281,12 +3281,16 @@ func CreateDashFragmentWithConf(dConf DashConfig, filename string, fragmentNumbe
 	mdat.Size = 0
 	mdat.Filename = filename
 	var i uint32
+
+	// Get to the first element, count the number of ctts sample offset
 	for i = 0; i < sampleStart; i++ {
 		if stsz.SampleSize == 0 {
 			mdat.Offset += int64(stsz.EntrySize[i])
 		} else {
 			mdat.Offset += int64(stsz.SampleSize)
 		}
+
+		// Getting the number of ctts offset
 		if compositionTimeOffset == true {
 			if cttsSampleCount > 0 {
 				cttsSampleCount--
@@ -3320,10 +3324,14 @@ func CreateDashFragmentWithConf(dConf DashConfig, filename string, fragmentNumbe
 				if lastCompositionTimeOffset != 0 {
 					trun.Samples[i-sampleStart].Flags = 25231552
 				}
+
+				// Retrieve the last composition time offset
 				trun.Samples[i-sampleStart].CompositionTimeOffset = int64(ctts.Entries[cttsOffset].SampleOffset) - dConf.MediaTime
+				// If (bFrame scheme) reordering?
 				if trun.Samples[i-sampleStart].CompositionTimeOffset > 0 {
 					lastCompositionTimeOffset = trun.Samples[i-sampleStart].CompositionTimeOffset
 				} else {
+					// Set the lastCompositionOffset to the right time
 					lastCompositionTimeOffset += trun.Samples[i-sampleStart].CompositionTimeOffset
 				}
 				trun.Size += 4
@@ -3340,6 +3348,8 @@ func CreateDashFragmentWithConf(dConf DashConfig, filename string, fragmentNumbe
 				}
 			}
 		}
+
+		// Update the size of the element
 		mdat.Size += size
 	}
 	if dConf.Type == "video" {
