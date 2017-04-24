@@ -8,9 +8,6 @@ import (
 )
 
 func debug() {
-	debug := ts.NewStartStreamDebug(63000)
-	debug.Payload.Data = []byte{0x00, 0x00, 0x01, 0xe0, 0x00, 0x00, 0x80, 0xc0}
-	debug.ToBytes().PrintHexFull()
 }
 
 func main() {
@@ -21,6 +18,7 @@ func main() {
 		launch()
 	}
 }
+
 
 func launch() {
 	mp4m := mp4.ParseFile("small.mp4", "en")
@@ -45,3 +43,4 @@ func writeBytes(filename string, fragment []ts.Bytes) {
 		f.Write(fragment[i].ToBytes().Data)
 	}
 }
+

@@ -98,6 +98,7 @@ func parseMp4Files(files []inputFile) (mp4Files map[string][]mp4.Mp4) {
 	return
 }
 
+
 func main() {
 	if len(os.Args) < 2 {
 		fmt.Printf("Afrostream Media Server version 0.1     Sebastien Petit <spebsd@gmail.com>\n")

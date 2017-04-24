@@ -45,6 +45,7 @@ import (
 	"path"
 	"strconv"
 	"strings"
+	"ts"
 	"syscall"
 )
 
@@ -362,12 +363,13 @@ func httpRootServer(w http.ResponseWriter, r *http.Request) {
 				for _, t := range jConfig.Tracks[trackType] {
 					if t.Name == trackName && t.Bandwidth == trackBandwidth {
 						t.File = path.Dir(videoIdPath) + "/" + t.File
-						fragment := mp4.CreateDashFragmentWithConf(*t.Config, t.File, segmentNumber, jConfig.SegmentDuration)
-						fb := mp4.MapToBytes(fragment)
-						sizeToWrite := len(fb)
+						file := mp4.ParseFile(t.File, "en")
+						fragment := ts.CreateHLSFragment(file.Boxes , segmentNumber, jConfig.SegmentDuration)
+						sizeToWrite := len(fragment) * 188
 						w.Header().Set("Content-Length", strconv.Itoa(sizeToWrite))
+						i := 0
 						for sizeToWrite > 0 {
-							num, err := w.Write(fb)
+							num, err := w.Write(fragment[i].ToBytes().Data)
 							if err != nil {
 								http.Error(w, `{ "status": "ERROR", "reason": "`+err.Error()+`" }`, http.StatusInternalServerError)
 								return
@@ -379,7 +381,8 @@ func httpRootServer(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 		} else {
-			if path.Ext(pathStr) == ".mpd" {
+			switch path.Ext(pathStr) {
+			case ".mpd":
 				w.Header().Set("Content-Type", "application/dash+xml")
 				data, err := readFile(videoIdPath + ".json")
 				if err != nil {
@@ -394,10 +397,38 @@ func httpRootServer(w http.ResponseWriter, r *http.Request) {
 				}
 				mpdContent := createDashManifest(jConfig, videoId)
 				w.Write([]byte(mpdContent))
-			} else {
+			case ".m3u8":
+				w.Header().Set("Content-Type", "application/x-mpegURL")
+				data, err := readFile(videoIdPath + ".json")
+				if err != nil {
+					http.Error(w, `{ "status": "ERROR", "reason": "`+err.Error()+`" }`, http.StatusInternalServerError)
+					return
+				}
+				var jConfig mp4.JsonConfig
+				err = json.Unmarshal(data, &jConfig)
+				if err != nil {
+					http.Error(w, `{ "status": "ERROR", "reason": "`+err.Error()+`" }`, http.StatusInternalServerError)
+					return
+				}
+				hlsContent := ts.CreateHLSPlaylist(jConfig, videoId)
+				w.Write([]byte(hlsContent))
+			case ".ts":
+				w.Header().Set("Content-Type", "application/mp2ts")
+				mp4m := mp4.ParseFile("small.mp4", "en")
+				fragment := ts.CreateHLSFragmentDebug(mp4m.Boxes, 1, 10)
+				bytes := make([]byte, len(fragment)*188)
+				offset := 0
+				for _, a := range fragment {
+					for _, b := range a.ToBytes().Data {
+						bytes[offset] = b
+					}
+				}
+				w.Write([]byte(bytes))
+			default:
 				http.Error(w, `{ "status": "ERROR", "reason": "format is not supported" }`, http.StatusInternalServerError)
 				return
 			}
+
 		}
 	} else {
 		w.Header().Set("Content-Type", "application/octet-stream")

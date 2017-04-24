@@ -3231,7 +3231,17 @@ func CreateDashFragmentWithConf(dConf DashConfig, filename string, fragmentNumbe
 	sampleEnd := uint32(((float64(fragmentNumber) * float64(fragmentDuration)) * float64(dConf.Timescale)) / float64(dConf.SampleDelta))
 
 	// Search Positions in STSS Box
+
+	// STTS: Decoding time to sample box
+	// STTS gives the delta of samples in the time scale of the media
+	// Sample entries re ordered by decoding time stamps, (non negative)
+
+	// Decoding time for sample(n + 1) = DT(n + 1) = DT(n) + STTS(n)
+
+	// STSS sample number of I-Frames
 	var stss StssBox
+
+	// Retrieve all IFrames to set
 	var iFramesToSet []uint32
 	if dConf.Type == "video" {
 		f.Seek(dConf.Video.StssBoxOffset, 0)
@@ -3249,7 +3259,10 @@ func CreateDashFragmentWithConf(dConf DashConfig, filename string, fragmentNumbe
 				iFramesToSet = append(iFramesToSet, stss.SampleNumber[i]-1-sampleStart)
 			}
 		}
+
+		// If we have not reach the last entry count
 		if i < stss.EntryCount {
+			// Retrieve the sampleEnd
 			sampleEnd = stss.SampleNumber[i] - 1
 		} else {
 			lastSegment = true
@@ -3258,6 +3271,7 @@ func CreateDashFragmentWithConf(dConf DashConfig, filename string, fragmentNumbe
 	sampleEnd--
 
 	// Read STSZ Box
+	// Stsz: Size of each sample in this track
 	f.Seek(dConf.StszBoxOffset, 0)
 	var stszSize uint32
 	stszSize = 12 + ((sampleEnd + 1) * 4)
@@ -3266,10 +3280,17 @@ func CreateDashFragmentWithConf(dConf DashConfig, filename string, fragmentNumbe
 	}
 	readStszBox(f, stszSize, 0, "moov.trak.mdia.minf.stbl.stsz", mp4)
 	stsz := mp4["moov.trak.mdia.minf.stbl.stsz"][0].(StszBox)
+
+	// If the sampleEnd is beyond the number of sample in this track
 	if sampleEnd > (stsz.SampleCount - 1) {
 		sampleEnd = stsz.SampleCount - 1
 	}
+
+
+	/// +++++++++++++++++ STOP GETTING START/END Samples IDs +++++++++++++++++
 	trun.SampleCount = uint32(sampleEnd - sampleStart + 1)
+
+
 	trun.Size = 12
 	trun.Samples = make([]TrunBoxSample, trun.SampleCount)
 	var cttsOffset uint32
@@ -3282,7 +3303,14 @@ func CreateDashFragmentWithConf(dConf DashConfig, filename string, fragmentNumbe
 	mdat.Filename = filename
 	var i uint32
 
-	// Get to the first element, count the number of ctts sample offset
+
+	/// ++++++++ GET TO START OF MDAT ++++++++
+	// Get to the first element
+	// Update CTTS Table (count, offset)
+	// Count is the number of samples having this offset
+	// Offset is the offset to retrieve the difference between the decoding time and composition time
+
+	// All duration are based on timescale (mdhd.timescale, T(real) = offset*timescale)
 	for i = 0; i < sampleStart; i++ {
 		if stsz.SampleSize == 0 {
 			mdat.Offset += int64(stsz.EntrySize[i])
@@ -3308,7 +3336,9 @@ func CreateDashFragmentWithConf(dConf DashConfig, filename string, fragmentNumbe
 	var size uint32
 	var lastCompositionTimeOffset int64
 	lastCompositionTimeOffset = 0
-	// Copy samples
+	// Update components offset
+
+	/// +++++++++++++++++ RETRIEVE PTS DTS +++++++++++++++++++
 	for i = sampleStart; i <= sampleEnd; i++ {
 		if stsz.SampleSize == 0 {
 			size = stsz.EntrySize[i]
