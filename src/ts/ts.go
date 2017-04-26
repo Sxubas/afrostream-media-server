@@ -10,7 +10,6 @@ func CreateHLSFragmentWithConf(dConf mp4.DashConfig, fragmentNumber uint32, frag
 	// Variables data used to create our modifiedFragment
 	modifiedFragment := FragmentData{}
 
-
 	// 1) analyse the stream and found get main information
 	streamInfo := AnalyseStream(mp4)
 

@@ -1,8 +1,11 @@
 package ts
 
+import "mp4"
 
 // Analyse the stream and get main information
-func AnalyseStream(mp4 map[string][]interface{}) (streamInfo StreamInfo){
+func AnalyseStream(dConf mp4.DashConfig, info StreamInfo) (streamInfo StreamInfo){
+	// Save conf
+
 	// Retrieve needed boxes
 
 	// Register audio/video
@@ -10,6 +13,20 @@ func AnalyseStream(mp4 map[string][]interface{}) (streamInfo StreamInfo){
 	// Check if it has composition offset (PTS/DTS)
 
 
-
 	return
+}
+
+func LoadBoxes(info StreamInfo) {
+
+	// Get data
+	// MDAT
+
+	// Get the composition time offset
+	// CTTS
+
+	// Retrieve all iFrames
+	// STSS
+
+	// Get size information
+	// STSZ
 }

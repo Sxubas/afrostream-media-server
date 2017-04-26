@@ -1,14 +1,10 @@
 package ts
 
 type FragmentInfo struct {
-	Type string
-	Mp4 map[string][]interface{}
+	sampleStart uint32
+	sampleEnd uint32
+	iFramesIndices []uint32
+	fragmentNumber uint32
+	fragmentDuration uint32
 }
 
-func (info FragmentInfo) isVideo() (bool) {
-	return info.Type == "video"
-}
-
-func (info FragmentInfo) isAudio() (bool) {
-	return info.Type == "audio"
-}
