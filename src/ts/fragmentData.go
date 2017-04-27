@@ -16,7 +16,7 @@ type FragmentData struct {
 }
 
 type Emitter interface {
-	ResetEmitter()
+	Reset()
 	HasEmitLeft()
 	Emit()
 }
@@ -28,12 +28,16 @@ type IEmitter struct {
 }
 
 
-func (emitter IEmitter) ResetEmitter() {
+func (emitter IEmitter) Reset() {
 	emitter.NEmit = emitter.Min_emit
 }
 
-func (emitter IEmitter) Emit() {
-	emitter.NEmit -= 1
+func (emitter IEmitter) Emit() (bool) {
+	if emitter.HasEmitLeft() {
+		emitter.NEmit -= 1
+		return false
+	}
+	return true
 }
 
 func (emitter IEmitter) HasEmitLeft() (bool) {

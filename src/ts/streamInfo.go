@@ -10,6 +10,7 @@ type StreamInfo struct {
 	ctts mp4.CttsBox
 	stss mp4.StssBox
 	stsz mp4.StszBox
+	stts mp4.SttsBox
 
 	compositionTimeOffset bool
 }

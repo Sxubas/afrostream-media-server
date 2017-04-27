@@ -1,7 +1,7 @@
 package ts
 
 type SampleInfo struct {
-	PCR uint32
+	PCR uint64
 	CTS uint32
 	DTS uint32
 

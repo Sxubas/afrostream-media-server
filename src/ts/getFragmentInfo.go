@@ -14,8 +14,11 @@ func GetFragmentInfo(streamInfo StreamInfo, fragmentNumber uint32, fragmentDurat
 	// Retrieve MDAT offset and size
 	registerMdatOffset(streamInfo, fragmentInfo)
 
-	// Retrieve CTTS start Offset
-	registerCTTSStartOffset(streamInfo, fragmentInfo)
+	// Retrieve CTTS start Offset for CTS
+	registerCTSStart(streamInfo, fragmentInfo)
+
+	// Retrieve STTS start offset for DTS
+	registerDTSStart(streamInfo, fragmentInfo)
 
 	return
 }
@@ -73,22 +76,44 @@ func registerMdatOffset(stream StreamInfo, frag FragmentInfo) {
 	}
 }
 
-func registerCTTSStartOffset(stream StreamInfo, frag FragmentInfo) {
+func registerCTSStart(stream StreamInfo, frag FragmentInfo) {
 
-	var cttsSampleCount uint32
 	var i uint32
 
 	for i = 0; i < frag.sampleStart; i++ {
 		// Getting the number of ctts offset
 		if stream.compositionTimeOffset {
-			if cttsSampleCount > 0 {
-				cttsSampleCount--
-				if cttsSampleCount == 0 {
+			if frag.cttsSampleCount > 0 {
+				frag.cttsSampleCount--
+				if frag.cttsSampleCount == 0 {
 					frag.cttsOffset++
 				}
 			} else {
-				cttsSampleCount = stream.ctts.Entries[frag.cttsOffset].SampleCount - 1
-				if cttsSampleCount == 0 {
+				frag.cttsSampleCount = stream.ctts.Entries[frag.cttsOffset].SampleCount - 1
+				if frag.cttsSampleCount == 0 {
+					frag.cttsOffset++
+				}
+			}
+		}
+	}
+}
+
+func registerDTSStart(stream StreamInfo, frag FragmentInfo) {
+
+	var i uint32
+
+	for i = 0; i < frag.sampleStart; i++ {
+		// Getting the number of ctts offset
+		if stream.compositionTimeOffset {
+			frag.dts += stream.stts.Entries[frag.sttsOffset].SampleDelta
+			if frag.sttsSampleCount > 0 {
+				frag.sttsSampleCount--
+				if frag.sttsSampleCount == 0 {
+					frag.sttsOffset++
+				}
+			} else {
+				frag.sttsSampleCount = stream.stts.Entries[frag.sttsOffset].SampleCount - 1
+				if frag.cttsSampleCount == 0 {
 					frag.cttsOffset++
 				}
 			}

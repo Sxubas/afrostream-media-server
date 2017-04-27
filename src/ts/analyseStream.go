@@ -33,6 +33,9 @@ func LoadBoxes(info StreamInfo) {
 	// CTTS
 	info.ctts = mp4File["moov.trak.mdia.minf.stbl.ctts"][0].(mp4.CttsBox)
 
+	// Get the decoding time offset
+	info.stts = mp4File["moov.trak.mdia.minf.stbl.stts"][0].(mp4.SttsBox)
+
 	// Retrieve all iFrames
 	// STSS
 	info.stss = mp4File["moov.trak.mdia.minf.stbl.stss"][0].(mp4.StssBox)
