@@ -15,6 +15,10 @@ type SampleInfo struct {
 	mdatSize   uint32
 
 	size uint32
+
+	hasPCR 		bool
+	hasDTS		bool
+	hasCTS		bool
 }
 
 func (info SampleInfo) IsRegisteringPCR() (bool) {

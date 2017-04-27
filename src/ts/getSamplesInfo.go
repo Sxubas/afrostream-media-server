@@ -60,8 +60,10 @@ func registerPCRSamples(stream StreamInfo, fragmentInfo FragmentInfo, sampleInfo
 
 	for sampleID, sample := range sampleInfo {
 
-		if pcrEmitter.Emit() {
+		sample.hasPCR = pcrEmitter.Emit()
+		if sample.hasPCR {
 			sample.PCR = uint64((fragmentInfo.sampleStart + uint32(sampleID))* stream.SampleDelta)
+
 			pcrEmitter.Reset()
 		}
 	}
@@ -102,12 +104,14 @@ func registerCTSAndDTSSamples(stream StreamInfo, fragmentInfo FragmentInfo, samp
 			}
 		} else {
 			sttsSampleCount = stream.stts.Entries[sttsOffset].SampleCount - 1
-			if cttsSampleCount == 0 {
-				cttsOffset++
+			if sttsSampleCount == 0 {
+				sttsOffset++
 			}
 		}
 
-		if emitter.Emit() {
+		sample.hasDTS = emitter.Emit()
+		sample.hasCTS = sample.hasDTS
+		if sample.hasDTS {
 			sample.DTS = dts
 			sample.CTS = stream.ctts.Entries[cttsOffset].SampleOffset + dts // - dConf.MediaTime
 			emitter.Reset()

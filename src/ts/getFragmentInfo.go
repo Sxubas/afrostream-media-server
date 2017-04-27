@@ -113,8 +113,8 @@ func registerDTSStart(stream StreamInfo, frag FragmentInfo) {
 				}
 			} else {
 				frag.sttsSampleCount = stream.stts.Entries[frag.sttsOffset].SampleCount - 1
-				if frag.cttsSampleCount == 0 {
-					frag.cttsOffset++
+				if frag.sttsSampleCount == 0 {
+					frag.sttsOffset++
 				}
 			}
 		}
