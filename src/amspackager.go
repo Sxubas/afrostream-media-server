@@ -178,7 +178,7 @@ func main() {
 		t.Name = "video_" + mp4File.Language
 		t.File = mp4File.Filename
 		t.Lang = mp4File.Language
-		t.Config = new(mp4.DashConfig)
+		t.Config = new(mp4.Conf)
 		t.Config.StszBoxOffset = stsz.Offset
 		t.Config.StszBoxSize = stsz.Size
 		t.Config.MdatBoxOffset = mdat.Offset
@@ -233,7 +233,7 @@ func main() {
 		t.Name = "audio_" + mp4File.Language
 		t.File = mp4File.Filename
 		t.Lang = mp4File.Language
-		t.Config = new(mp4.DashConfig)
+		t.Config = new(mp4.Conf)
 		t.Config.StszBoxOffset = stsz.Offset
 		t.Config.StszBoxSize = stsz.Size
 		t.Config.MdatBoxOffset = mdat.Offset

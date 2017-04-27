@@ -5,7 +5,7 @@ import (
 )
 
 
-func CreateHLSFragmentWithConf(dConf mp4.DashConfig, fragmentNumber uint32, fragmentDuration uint32) ([]byte) {
+func CreateHLSFragmentWithConf(dConf mp4.Conf, fragmentNumber uint32, fragmentDuration uint32) ([]byte) {
 
 	// Variables data used to create our modifiedFragment
 	modifiedFragment := FragmentData{}

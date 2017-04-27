@@ -3,8 +3,15 @@ package ts
 import "mp4"
 
 type StreamInfo struct {
-	mp4.DashConfig
-	Type string
+	mp4.Conf
+	filename string
+
+	mdat mp4.MdatBox
+	ctts mp4.CttsBox
+	stss mp4.StssBox
+	stsz mp4.StszBox
+
+	compositionTimeOffset bool
 }
 
 func (info StreamInfo) isVideo() (bool) {

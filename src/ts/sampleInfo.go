@@ -5,27 +5,27 @@ type SampleInfo struct {
 	CTS uint32
 	DTS uint32
 
-	RegisterPCR bool
-	RegisterCTS bool
-	RegisterDTS bool
+	registerPCR bool
+	registerCTS bool
+	registerDTS bool
 
-	IsIFrameType bool
+	isIFrameType bool
 
-	MdatOffset uint32
-	MdatSize uint32
+	mdatOffset uint32
+	mdatSize   uint32
 
-	Size uint32
+	size uint32
 }
 
 func (info SampleInfo) IsRegisteringPCR() (bool) {
-	return info.RegisterPCR
+	return info.registerPCR
 }
 func (info SampleInfo) IsRegisteringDTS() (bool) {
-	return info.RegisterDTS
+	return info.registerDTS
 }
 func (info SampleInfo) IsRegisteringCTS() (bool) {
-	return info.RegisterCTS
+	return info.registerCTS
 }
 func (info SampleInfo) IsIframe() (bool) {
-	return info.IsIFrameType
+	return info.isIFrameType
 }

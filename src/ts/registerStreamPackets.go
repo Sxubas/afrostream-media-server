@@ -27,7 +27,7 @@ func CreateFragments(info SampleInfo, fragment FragmentData) (packets []Packet){
 	// IF pts
 	// IF isIFrame set RAP
 
-	// Compute the Number of fragments needed
+	// Compute the number of fragments needed
 
 	// Create fragments
 	for true {

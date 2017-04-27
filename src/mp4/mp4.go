@@ -52,7 +52,7 @@ type TrackEntry struct {
 	Bandwidth uint64
 	File      string
 	Lang      string
-	Config    *DashConfig `json:",omitempty"`
+	Config    *Conf `json:",omitempty"`
 }
 
 type DashAudioEntry struct {
@@ -87,7 +87,7 @@ type DashVideoEntry struct {
 	CttsBoxSize          uint32
 }
 
-type DashConfig struct {
+type Conf struct {
 	StszBoxOffset int64
 	StszBoxSize   uint32
 	MdatBoxOffset int64
@@ -2848,7 +2848,7 @@ func CreateDashFragment(mp4 map[string][]interface{}, fragmentNumber uint32, fra
 }
 
 // Create DASH init header with a config struct
-func CreateDashInitWithConf(dConf DashConfig) (mp4Init map[string][]interface{}) {
+func CreateDashInitWithConf(dConf Conf) (mp4Init map[string][]interface{}) {
 	mp4Init = make(map[string][]interface{})
 
 	// Create FTYP Box
@@ -3136,7 +3136,7 @@ func CreateDashInitWithConf(dConf DashConfig) (mp4Init map[string][]interface{})
 	return
 }
 
-func CreateDashFragmentWithConf(dConf DashConfig, filename string, fragmentNumber uint32, fragmentDuration uint32) (fmp4 map[string][]interface{}) {
+func CreateDashFragmentWithConf(dConf Conf, filename string, fragmentNumber uint32, fragmentDuration uint32) (fmp4 map[string][]interface{}) {
 	lastSegment := false
 	compositionTimeOffset := false
 
@@ -3428,6 +3428,23 @@ func CreateDashFragmentWithConf(dConf DashConfig, filename string, fragmentNumbe
 // ***
 // *** Package initialization
 // ***
+
+func ReadMainBoxes(filename string, conf Conf) (mp4 map[string][]interface{}) {
+	mp4 = make(map[string][]interface{})
+
+	f, err := os.Open(filename)
+	if err != nil {
+		panic(err)
+	}
+
+	fInfo, err := f.Stat()
+	if err != nil {
+		panic(err)
+	}
+
+	readBoxes(f, uint32(fInfo.Size()), 0, "", mp4)
+	return
+}
 
 func init() {
 	debugMode = false
