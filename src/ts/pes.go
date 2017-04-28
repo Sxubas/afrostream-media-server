@@ -10,7 +10,7 @@ type PES struct {
 type PESSection struct {
 	Bytes
 	PacketStartCodePrefix uint32 // 24b
-	StreamId              byte   // 1Byte
+	StreamId              uint32   // 1Byte
 	PES_PacketLength      uint16 // 2Bytes
 }
 
@@ -80,36 +80,23 @@ func NewPes() (pes *PES) {
 	return
 }
 
-func NewStartStream(baseMediaDecodeTime uint64) (pes *PES) {
+func NewStream(PID uint16) (pes *PES) {
 	pes = NewPes()
-
-	pes.PID = 48
-	pes.PCR_Flag = 1
-	pes.PayloadUnitStartIndicator = 0
-	pes.RandomAccessIndicator = 1
-	pes.PCR.BaseMediaDecodeTime = baseMediaDecodeTime
-	pes.AdaptationFieldControl = 0x02 // Adaptation field only, no payload
-	pes.AdaptationFieldLength = 183
-
-	pes.Section.PacketStartCodePrefix = 1
-	pes.Section.StreamId = 224
-
+	pes.PID = PID
 	return
 }
 
-func NewStartStreamDebug(baseMediaDecodeTime uint64) (pes *PES) {
+func NewStartStream(PID uint16, streamId uint32) (pes *PES) {
 	pes = NewPes()
 
-	pes.PID = 256
-	pes.PCR_Flag = 1
-	pes.PayloadUnitStartIndicator = 1
-	pes.RandomAccessIndicator = 1
-	pes.PCR.BaseMediaDecodeTime = baseMediaDecodeTime
+	pes.PID = PID
+
 	pes.AdaptationFieldControl = 0x03 // Adaptation field + payload
-	pes.AdaptationFieldLength = 7
+	pes.AdaptationFieldLength = 2
 
 	pes.Section.PacketStartCodePrefix = 1
-	pes.Section.StreamId = 224
+	pes.Section.StreamId = streamId
 
 	return
 }
+

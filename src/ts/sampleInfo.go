@@ -2,8 +2,8 @@ package ts
 
 type SampleInfo struct {
 	PCR uint64
-	CTS uint32
-	DTS uint32
+	CTS uint64
+	DTS uint64
 
 	registerPCR bool
 	registerCTS bool
@@ -32,4 +32,8 @@ func (info SampleInfo) IsRegisteringCTS() (bool) {
 }
 func (info SampleInfo) IsIframe() (bool) {
 	return info.isIFrameType
+}
+
+func (info SampleInfo) HasAdaptationField() (bool) {
+	return info.IsRegisteringPCR()
 }

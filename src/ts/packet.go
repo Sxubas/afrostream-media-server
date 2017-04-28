@@ -134,3 +134,25 @@ func (packet Packet) HasPayload() bool {
 	return packet.Header.AdaptationFieldControl&1 != 0
 }
 
+func (field AdaptationField) setPCR(PCR PCR) {
+	field.PCR = PCR
+	field.PCR_Flag = 1
+	field.AdaptationFieldLength += 6
+}
+
+func (packet Packet) setAdaptationControl(adaptationFieldFlag bool, payloadFlag bool) {
+	if adaptationFieldFlag {
+		if payloadFlag {
+			packet.AdaptationFieldControl = 0x03
+		} else {
+			packet.AdaptationFieldControl = 0x02
+		}
+	} else {
+		if payloadFlag {
+			packet.AdaptationFieldControl = 0x01
+		} else {
+			packet.AdaptationFieldControl = 0x00
+		}
+	}
+
+}

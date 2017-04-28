@@ -16,6 +16,14 @@ func AnalyseStream(dConf mp4.Conf, filename string, info StreamInfo) (streamInfo
 	// Check if it has composition offset (PTS/DTS)
 	info.compositionTimeOffset = info.isVideo() && dConf.Video.CttsBoxOffset != 0
 
+	if info.isVideo() {
+		info.PID = 257
+		info.streamId = 224
+	} else {
+		info.PID = 256
+		info.streamId = 127
+	}
+
 	return
 }
 

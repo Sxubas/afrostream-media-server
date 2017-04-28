@@ -12,14 +12,50 @@ type Data struct {
 	Offset int
 }
 
+func (data *Data) PushUIntAlloc(object uint32, objectSize int) {
+	data.PushObjAlloc(object, objectSize)
+}
+
+func (data *Data) PushUInt64Alloc(object uint64, objectSize int) {
+	data.PushObjAlloc(object, objectSize)
+}
+
+func (data *Data) PushIntAlloc(object int64, objectSize int) {
+	data.PushObjAlloc(object, objectSize)
+}
+
 // Push int on Data
 func (data *Data) PushUInt(object uint32, objectSize int) {
 	data.PushObj(object, objectSize)
 }
 
 // Push int on Data
+func (data *Data) PushUInt64(object uint64, objectSize int) {
+	data.PushObj(object, objectSize)
+}
+
+// Push int on Data
 func (data *Data) PushInt(object int64, objectSize int) {
 	data.PushObj(object, objectSize)
+}
+
+func (data *Data) PushObjAlloc(object interface{}, objectSize int) {
+	// If need to reserve more data
+	neededBits := objectSize - data.GetSpaceLeftInBits()
+
+	if neededBits > 0 {
+		data.AllocBits(neededBits)
+	}
+}
+
+// Alloc data at the end of memory
+func (data *Data) AllocBytes(byteSize int) {
+	data.Data = append(data.Data, make([]byte, byteSize)...)
+}
+
+// Alloc data at the end of memory
+func (data *Data) AllocBits(bitSize int) {
+	data.AllocBytes(bitSize/8)
 }
 
 // Push object on Data
@@ -204,6 +240,16 @@ func (data *Data) GetByteIndex() int {
 // Get number of residual bits in the current byte
 func (data *Data) GetResidualBits() int {
 	return 8 - data.Offset%8
+}
+
+// Get the number of bits remaining on memory
+func (data *Data) GetSpaceLeftInBits() int {
+	return len(data.Data)*8 - data.Offset
+}
+
+// Get the number of bytes remaining on memory
+func (data *Data) GetSpaceLeftInByte() int {
+	return (len(data.Data)*8 - data.Offset)/8
 }
 
 // Create Data with offset support
