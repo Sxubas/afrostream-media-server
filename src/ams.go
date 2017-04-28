@@ -364,7 +364,7 @@ func httpRootServer(w http.ResponseWriter, r *http.Request) {
 					if t.Name == trackName && t.Bandwidth == trackBandwidth {
 						t.File = path.Dir(videoIdPath) + "/" + t.File
 						file := mp4.ParseFile(t.File, "en")
-						fragment := ts.CreateHLSFragment(file.Boxes , segmentNumber, jConfig.SegmentDuration)
+						fragment := mp4.CreateDashFragmentWithConf(file.Boxes , segmentNumber, jConfig.SegmentDuration)
 						sizeToWrite := len(fragment) * 188
 						w.Header().Set("Content-Length", strconv.Itoa(sizeToWrite))
 						i := 0
