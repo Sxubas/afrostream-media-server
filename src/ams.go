@@ -263,6 +263,154 @@ func httpServerLoadPage(path string) (content []byte, err error) {
 	return
 }
 
+func treatDashRequest(videoIdPath string, s []string, w http.ResponseWriter) {
+	split1 := strings.Split(s[1], "-")
+	split2 := strings.Split(split1[1], "=")
+	split3 := strings.Split(split2[1], ".")
+	split4 := strings.Split(split2[0], "_")
+
+	trackName := split2[0]
+	trackType := split4[0]
+	var trackBandwidth uint64
+	num, err := strconv.ParseUint(split3[0], 10, 64)
+	if err != nil {
+		http.Error(w, `{ "status": "ERROR", "reason": "`+err.Error()+`" }`, http.StatusInternalServerError)
+		return
+	}
+	trackBandwidth = num
+	data, err := readFile(videoIdPath + ".json")
+	if err != nil {
+		http.Error(w, `{ "status": "ERROR", "reason": "`+err.Error()+`" }`, http.StatusInternalServerError)
+		return
+	}
+
+	var jConfig mp4.JsonConfig
+	err = json.Unmarshal(data, &jConfig)
+	if err != nil {
+		http.Error(w, `{ "status": "ERROR", "reason": "`+err.Error()+`" }`, http.StatusInternalServerError)
+		return
+	}
+
+	for _, t := range jConfig.Tracks[trackType] {
+		if t.Name == trackName && t.Bandwidth == trackBandwidth {
+			dashInit := mp4.CreateDashInitWithConf(*t.Config)
+			b := mp4.MapToBytes(dashInit)
+			w.Header().Set("Content-Length", strconv.Itoa(len(b)))
+			_, err := w.Write(b)
+			if err != nil {
+				http.Error(w, `{ "status": "ERROR", "reason": "`+err.Error()+`" }`, http.StatusInternalServerError)
+				return
+			}
+		}
+	}
+}
+
+func treatM4SRequest(videoIdPath string, s []string, w http.ResponseWriter) {
+	split1 := strings.Split(s[1], "-")
+	split2 := strings.Split(split1[1], "=")
+	split3 := strings.Split(split1[2], ".")
+	split4 := strings.Split(split2[0], "_")
+
+	trackName := split2[0]
+	trackType := split4[0]
+	var trackBandwidth uint64
+	num, err := strconv.ParseUint(split2[1], 10, 64)
+	if err != nil {
+		http.Error(w, `{ "status": "ERROR", "reason": "`+err.Error()+`" }`, http.StatusInternalServerError)
+		return
+	}
+	trackBandwidth = num
+	num, err = strconv.ParseUint(split3[0], 10, 32)
+	if err != nil {
+		http.Error(w, `{ "status": "ERROR", "reason": "`+err.Error()+`" }`, http.StatusInternalServerError)
+		return
+	}
+	var segmentNumber uint32
+	segmentNumber = uint32(num)
+
+	data, err := readFile(videoIdPath + ".json")
+	if err != nil {
+		http.Error(w, `{ "status": "ERROR", "reason": "`+err.Error()+`" }`, http.StatusInternalServerError)
+		return
+	}
+	var jConfig mp4.JsonConfig
+	err = json.Unmarshal(data, &jConfig)
+	if err != nil {
+		http.Error(w, `{ "status": "ERROR", "reason": "`+err.Error()+`" }`, http.StatusInternalServerError)
+		return
+	}
+
+	for _, t := range jConfig.Tracks[trackType] {
+		if t.Name == trackName && t.Bandwidth == trackBandwidth {
+			t.File = path.Dir(videoIdPath) + "/" + t.File
+			fragment := mp4.CreateDashFragmentWithConf(*t.Config, t.File, segmentNumber, jConfig.SegmentDuration)
+			fb := mp4.MapToBytes(fragment)
+			sizeToWrite := len(fb)
+			w.Header().Set("Content-Length", strconv.Itoa(sizeToWrite))
+			for sizeToWrite > 0 {
+				num, err := w.Write(fb)
+				if err != nil {
+					http.Error(w, `{ "status": "ERROR", "reason": "` + err.Error() + `" }`, http.StatusInternalServerError)
+					return
+				}
+				sizeToWrite -= num
+			}
+			return
+		}
+	}
+}
+
+func treatMPDRequest(videoId string, videoIdPath string, w http.ResponseWriter) {
+	w.Header().Set("Content-Type", "application/dash+xml")
+	data, err := readFile(videoIdPath + ".json")
+	if err != nil {
+		http.Error(w, `{ "status": "ERROR", "reason": "`+err.Error()+`" }`, http.StatusInternalServerError)
+		return
+	}
+	var jConfig mp4.JsonConfig
+	err = json.Unmarshal(data, &jConfig)
+	if err != nil {
+		http.Error(w, `{ "status": "ERROR", "reason": "`+err.Error()+`" }`, http.StatusInternalServerError)
+		return
+	}
+	mpdContent := createDashManifest(jConfig, videoId)
+	w.Write([]byte(mpdContent))
+}
+
+func treatM3U8Request(splitDirs[] string, videoId string, videoIdPath string, w http.ResponseWriter) {
+
+	w.Header().Set("Content-Type", "application/x-mpegURL")
+	data, err := readFile(videoIdPath + ".json")
+	if err != nil {
+		http.Error(w, `{ "status": "ERROR", "reason": "`+err.Error()+`" }`, http.StatusInternalServerError)
+		return
+	}
+	var jConfig mp4.JsonConfig
+	err = json.Unmarshal(data, &jConfig)
+	if err != nil {
+		http.Error(w, `{ "status": "ERROR", "reason": "`+err.Error()+`" }`, http.StatusInternalServerError)
+		return
+	}
+
+	err = ts.TreatM3U8Request(splitDirs, jConfig, videoIdPath, videoId, w)
+	if err != nil {
+		http.Error(w, `{ "status": "ERROR", "reason": "`+err.Error()+`" }`, http.StatusInternalServerError)
+		return
+	}
+}
+
+func treatTSRequest(videoId string, videoIdPath string, w http.ResponseWriter) {
+
+	w.Header().Set("Content-Type", "video/MP2T")
+	data, err := readFile(videoIdPath + ".json")
+	if err != nil {
+		http.Error(w, `{ "status": "ERROR", "reason": "`+err.Error()+`" }`, http.StatusInternalServerError)
+		return
+	}
+	var jConfig mp4.JsonConfig
+	err = json.Unmarshal(data, &jConfig)
+
+}
 func httpRootServer(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Credentials", "true")
@@ -282,153 +430,31 @@ func httpRootServer(w http.ResponseWriter, r *http.Request) {
 		videoId := path.Base(videoIdPath)
 		splitDirs := strings.Split(s[1], "/")
 
-		if len(splitDirs) > 2 && splitDirs[1] == "dash" {
-			w.Header().Set("Content-Type", "video/mp4")
-			switch path.Ext(pathStr) {
-			case ".dash":
-				split1 := strings.Split(s[1], "-")
-				split2 := strings.Split(split1[1], "=")
-				split3 := strings.Split(split2[1], ".")
-				split4 := strings.Split(split2[0], "_")
-
-				trackName := split2[0]
-				trackType := split4[0]
-				var trackBandwidth uint64
-				num, err := strconv.ParseUint(split3[0], 10, 64)
-				if err != nil {
-					http.Error(w, `{ "status": "ERROR", "reason": "`+err.Error()+`" }`, http.StatusInternalServerError)
-					return
+		if len(splitDirs) > 2 {
+			if splitDirs[1] == "dash" {
+				w.Header().Set("Content-Type", "video/mp4")
+				switch path.Ext(pathStr) {
+				case ".mpd":
+					treatMPDRequest(videoId, videoIdPath, w)
+				case ".dash":
+					treatDashRequest(videoIdPath, s, w)
+				case ".m4s":
+					treatM4SRequest(videoIdPath, s, w)
 				}
-				trackBandwidth = num
-				data, err := readFile(videoIdPath + ".json")
-				if err != nil {
-					http.Error(w, `{ "status": "ERROR", "reason": "`+err.Error()+`" }`, http.StatusInternalServerError)
-					return
+			} else if splitDirs[1] == "hls" {
+				switch path.Ext(pathStr) {
+				case ".m3u8":
+					treatM3U8Request(splitDirs[1:], videoIdPath, s, w)
+				case ".ts":
+					treatTSRequest(videoIdPath, s, w)
 				}
-
-				var jConfig mp4.JsonConfig
-				err = json.Unmarshal(data, &jConfig)
-				if err != nil {
-					http.Error(w, `{ "status": "ERROR", "reason": "`+err.Error()+`" }`, http.StatusInternalServerError)
-					return
-				}
-
-				for _, t := range jConfig.Tracks[trackType] {
-					if t.Name == trackName && t.Bandwidth == trackBandwidth {
-						dashInit := mp4.CreateDashInitWithConf(*t.Config)
-						b := mp4.MapToBytes(dashInit)
-						w.Header().Set("Content-Length", strconv.Itoa(len(b)))
-						_, err := w.Write(b)
-						if err != nil {
-							http.Error(w, `{ "status": "ERROR", "reason": "`+err.Error()+`" }`, http.StatusInternalServerError)
-							return
-						}
-					}
-				}
-			case ".m4s":
-				split1 := strings.Split(s[1], "-")
-				split2 := strings.Split(split1[1], "=")
-				split3 := strings.Split(split1[2], ".")
-				split4 := strings.Split(split2[0], "_")
-
-				trackName := split2[0]
-				trackType := split4[0]
-				var trackBandwidth uint64
-				num, err := strconv.ParseUint(split2[1], 10, 64)
-				if err != nil {
-					http.Error(w, `{ "status": "ERROR", "reason": "`+err.Error()+`" }`, http.StatusInternalServerError)
-					return
-				}
-				trackBandwidth = num
-				num, err = strconv.ParseUint(split3[0], 10, 32)
-				if err != nil {
-					http.Error(w, `{ "status": "ERROR", "reason": "`+err.Error()+`" }`, http.StatusInternalServerError)
-					return
-				}
-				var segmentNumber uint32
-				segmentNumber = uint32(num)
-
-				data, err := readFile(videoIdPath + ".json")
-				if err != nil {
-					http.Error(w, `{ "status": "ERROR", "reason": "`+err.Error()+`" }`, http.StatusInternalServerError)
-					return
-				}
-				var jConfig mp4.JsonConfig
-				err = json.Unmarshal(data, &jConfig)
-				if err != nil {
-					http.Error(w, `{ "status": "ERROR", "reason": "`+err.Error()+`" }`, http.StatusInternalServerError)
-					return
-				}
-
-				for _, t := range jConfig.Tracks[trackType] {
-					if t.Name == trackName && t.Bandwidth == trackBandwidth {
-						t.File = path.Dir(videoIdPath) + "/" + t.File
-						file := mp4.ParseFile(t.File, "en")
-						fragment := mp4.CreateDashFragmentWithConf(file.Boxes , segmentNumber, jConfig.SegmentDuration)
-						sizeToWrite := len(fragment) * 188
-						w.Header().Set("Content-Length", strconv.Itoa(sizeToWrite))
-						i := 0
-						for sizeToWrite > 0 {
-							num, err := w.Write(fragment[i].ToBytes().Data)
-							if err != nil {
-								http.Error(w, `{ "status": "ERROR", "reason": "`+err.Error()+`" }`, http.StatusInternalServerError)
-								return
-							}
-							sizeToWrite -= num
-						}
-						return
-					}
-				}
-			}
-		} else {
-			switch path.Ext(pathStr) {
-			case ".mpd":
-				w.Header().Set("Content-Type", "application/dash+xml")
-				data, err := readFile(videoIdPath + ".json")
-				if err != nil {
-					http.Error(w, `{ "status": "ERROR", "reason": "`+err.Error()+`" }`, http.StatusInternalServerError)
-					return
-				}
-				var jConfig mp4.JsonConfig
-				err = json.Unmarshal(data, &jConfig)
-				if err != nil {
-					http.Error(w, `{ "status": "ERROR", "reason": "`+err.Error()+`" }`, http.StatusInternalServerError)
-					return
-				}
-				mpdContent := createDashManifest(jConfig, videoId)
-				w.Write([]byte(mpdContent))
-			case ".m3u8":
-				w.Header().Set("Content-Type", "application/x-mpegURL")
-				data, err := readFile(videoIdPath + ".json")
-				if err != nil {
-					http.Error(w, `{ "status": "ERROR", "reason": "`+err.Error()+`" }`, http.StatusInternalServerError)
-					return
-				}
-				var jConfig mp4.JsonConfig
-				err = json.Unmarshal(data, &jConfig)
-				if err != nil {
-					http.Error(w, `{ "status": "ERROR", "reason": "`+err.Error()+`" }`, http.StatusInternalServerError)
-					return
-				}
-				hlsContent := ts.CreateHLSPlaylist(jConfig, videoId)
-				w.Write([]byte(hlsContent))
-			case ".ts":
-				w.Header().Set("Content-Type", "application/mp2ts")
-				mp4m := mp4.ParseFile("small.mp4", "en")
-				fragment := ts.CreateHLSFragmentDebug(mp4m.Boxes, 1, 10)
-				bytes := make([]byte, len(fragment)*188)
-				offset := 0
-				for _, a := range fragment {
-					for _, b := range a.ToBytes().Data {
-						bytes[offset] = b
-					}
-				}
-				w.Write([]byte(bytes))
-			default:
+			} else {
 				http.Error(w, `{ "status": "ERROR", "reason": "format is not supported" }`, http.StatusInternalServerError)
 				return
 			}
-
+		} else {
+			http.Error(w, `{ "status": "ERROR", "reason": "format is not supported" }`, http.StatusInternalServerError)
+			return
 		}
 	} else {
 		w.Header().Set("Content-Type", "application/octet-stream")

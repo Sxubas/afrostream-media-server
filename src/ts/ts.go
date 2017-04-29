@@ -5,13 +5,13 @@ import (
 )
 
 
-func CreateHLSFragmentWithConf(dConf mp4.Conf, fragmentNumber uint32, fragmentDuration uint32) ([]byte) {
+func CreateHLSFragmentWithConf(dConf mp4.Conf, filename string, fragmentNumber uint32, fragmentDuration uint32) ([]byte) {
 
 	// Variables data used to create our modifiedFragment
 	modifiedFragment := FragmentData{}
 
 	// 1) analyse the stream and found get main information
-	streamInfo := AnalyseStream(mp4)
+	streamInfo := AnalyseStream(mp4, filename)
 
 	// 2) Create program packets
 	RegisterProgramPackets(streamInfo, modifiedFragment)
@@ -23,7 +23,7 @@ func CreateHLSFragmentWithConf(dConf mp4.Conf, fragmentNumber uint32, fragmentDu
 	samplesInfo := GetSamplesInfo(streamInfo, fragmentInfo, modifiedFragment)
 
 	// 5) Create PES packets
-	RegisterStreamPackets(samplesInfo, modifiedFragment)
+	RegisterStreamPackets(streamInfo, samplesInfo, modifiedFragment)
 
 	// 6) Create our fragment assembling all created packets
 	return FinaliseFragment(modifiedFragment)

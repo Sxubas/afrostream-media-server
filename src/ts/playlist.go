@@ -1,48 +1,156 @@
 package ts
 
 import (
+	"net/http"
+	"strings"
 	"mp4"
-	"fmt"
 	"strconv"
+	"path"
 )
 
-func CreateVideoAdaptationSetHLS(tracks []mp4.TrackEntry, videoId string, sDuration uint32) (s string, err error) {
-	/*s = "EXTM3U\n"
-	s += "#EXT-X-VERSION:3"
-	s += "#EXT-X-MEDIA-SEQUENCE:0"
-	s += "#EXT-X-TARGETDURATION:" + string(sDuration);*/
 
-	for i, t := range tracks {
-		s += "#EXTINF:" + fmt.Sprintf("%d", t.Config.Duration/uint64(t.Config.Timescale))  + "\n";
-		s += "./" + t.Name + "-" + strconv.Itoa(i) + "-" + "0" + ".ts\n";
+
+func TreatM3U8Request(splitDirs []string, jConfig mp4.JsonConfig, VideoIdPath string, videoId string, w http.ResponseWriter) (error) {
+	mediaType := splitDirs[0]
+
+	if len(splitDirs) == 1 {
+		mainDescriptor := CreateMainDescriptor(jConfig, videoId)
+		w.Write([]byte(mainDescriptor))
+	} else if len(splitDirs) == 3 {
+
+		// Request sub descriptor
+		switch mediaType {
+		case "audio":
+			// Find the corresponding language tracks
+			lang := splitDirs[1]
+			track, err := findLanguageTrack(lang, jConfig.Tracks["audio"])
+			if err != nil {
+				return err
+			}
+
+			// Get the number of segment in this track
+			numberOfSegments := getNumberOfSegments(track, jConfig)
+
+			// Create the descriptor
+			param := "audio/"  + lang + "/"
+			audioDescriptor := CreateMediaDescriptor(videoId, param, ".ts", jConfig.SegmentDuration, numberOfSegments)
+			w.Write([]byte(audioDescriptor))
+			break
+		case "video":
+			// Get the id stream
+			idStr := splitDirs[1]
+			track, err := getIdTrack(idStr, jConfig.Tracks["video"])
+			if err != nil {
+				return err
+			}
+
+			// Get the number of segment in this track
+			numberOfSegments := getNumberOfSegments(track, jConfig)
+
+			// Create the descriptor
+			param := "video/"  + idStr + "/"
+			videoDescriptor := CreateMediaDescriptor(videoId, param, ".ts", jConfig.SegmentDuration, numberOfSegments)
+			w.Write([]byte(videoDescriptor))
+			break
+		default:
+			return error("No media corresponding")
+		}
+	} else {
+		return error("Incorrect url access")
 	}
 
-	return
+	return nil
 }
 
-func CreateAudioAdaptationSetHLS(tracks []mp4.TrackEntry, videoId string, sDuration uint32) (s string, err error) {
-	/*s = "EXTM3U\n"
-	s += "#EXT-X-VERSION:3"
-	s += "#EXT-X-MEDIA-SEQUENCE:0"
-	s += "#EXT-X-TARGETDURATION:" + string(sDuration);*/
+func findLanguageTrack(lang string, tracks []mp4.TrackEntry) (mp4.TrackEntry, error){
 
-	for i, t := range tracks {
-		s += "#EXTINF:" + fmt.Sprintf("%d", t.Config.Duration/uint64(t.Config.Timescale)) + "\n";
-		s += "./" + t.Name + "-" + strconv.Itoa(i) + "-" + "0" + ".ts\n";
+	// Search for the right audio lang
+	for _,track := range tracks{
+		if track.Lang == lang {
+			return track, nil
+		}
+	}
+	return nil, error("No language: " + lang)
+}
+
+func getNumberOfSegments(track mp4.TrackEntry, jConfig mp4.JsonConfig) (int) {
+	return int(track.Config.Duration) / int(jConfig.SegmentDuration)
+}
+
+func getIdTrack(idStr string, tracks []mp4.TrackEntry) (mp4.TrackEntry, error) {
+
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		return nil, error("Not a valid quality stream: " + idStr)
 	}
 
-	return
+	if id < 0 || id >= len(tracks) {
+		return nil, error("No stream corresponding to this quality: " + idStr)
+	}
+
+	return tracks[id], nil
 }
 
-func CreateHLSPlaylist(jConf mp4.JsonConfig, videoId string) (playlist string) {
-	playlist = ""
-	playlist += "#EXTM3U\n"
-	playlist += "#EXT-X-TARGETDURATION:" + fmt.Sprintf("%d", jConf.SegmentDuration) + "\n";
+func TreatTSRequest(splitDirs []string, jConfig mp4.JsonConfig, videoIdPath string, videoId string, w http.ResponseWriter) (error) {
+	mediaType := splitDirs[0]
 
-	a, _ := CreateVideoAdaptationSetHLS(jConf.Tracks["video"], videoId, jConf.SegmentDuration)
-	playlist += a
-	a, _ = CreateAudioAdaptationSetHLS(jConf.Tracks["audio"], videoId, jConf.SegmentDuration)
-	playlist += a
-	fmt.Printf("%s", playlist)
-	return
+	if len(splitDirs) != 3 {
+		 return error("Incorrect url access")
+	}
+	splitFragmentNumber := strings.Split(splitDirs[2], ".")
+
+	if len(splitFragmentNumber) < 2 {
+		return error("Incorrect fragment number")
+	}
+
+	fragmentNumber, err := strconv.Atoi(splitFragmentNumber[0])
+
+	if err != nil {
+		return error("Incorrect fragment number: " + splitFragmentNumber[0])
+	}
+
+	var track mp4.TrackEntry
+
+	// Request sub descriptor
+	switch mediaType {
+	case "audio":
+		// Find the corresponding language tracks
+		lang := splitDirs[1]
+		track, err = findLanguageTrack(lang, jConfig.Tracks["audio"])
+		if err != nil {
+			return err
+		}
+		break
+	case "video":
+		// Get the id stream
+		idStr := splitDirs[1]
+		track, err = getIdTrack(idStr, jConfig.Tracks["video"])
+		if err != nil {
+			return err
+		}
+		break
+	default:
+		return error("No media corresponding")
+	}
+
+	// Get the number of segment in this track
+	numberOfSegments := getNumberOfSegments(track, jConfig)
+
+	if fragmentNumber < 0 || fragmentNumber >= numberOfSegments {
+		return error("Incorrect fragment number :" + splitFragmentNumber[0])
+	}
+
+	filePath := path.Dir(videoIdPath) + "/" + track.File
+	fragment := CreateHLSFragmentWithConf(*track.Config, filePath, uint32(fragmentNumber), jConfig.SegmentDuration)
+	sizeToWrite := len(fragment)
+	w.Header().Set("Content-Length", strconv.Itoa(sizeToWrite))
+	for sizeToWrite > 0 {
+		num, err := w.Write(fragment)
+		if err != nil {
+			return err
+		}
+		sizeToWrite -= num
+	}
+
+	return nil
 }

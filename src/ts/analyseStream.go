@@ -5,7 +5,7 @@ import (
 )
 
 // Analyse the stream and get main information
-func AnalyseStream(dConf mp4.Conf, filename string, info StreamInfo) (streamInfo StreamInfo){
+func AnalyseStream(dConf mp4.Conf, filename string) (streamInfo StreamInfo){
 	// Save conf
 	info.Conf = dConf
 	info.filename = filename
