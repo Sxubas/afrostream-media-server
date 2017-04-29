@@ -27,7 +27,7 @@ func launch() {
 	json.Unmarshal(data, &jConfig)
 
 	track := jConfig.Tracks["video"][0]
-	fragment := ts.CreateHLSFragmentWithConf(*track.Config, track.File, 0, jConfig.SegmentDuration)
+	fragment := ts.CreateHLSFragmentWithConf(*track.Config, track.File, 1, jConfig.SegmentDuration)
 	writeSample("sample.ts", fragment)
 
 }

@@ -159,6 +159,10 @@ func (data *Data) FillRemaining(pushed byte) {
 }
 
 func (data *Data) FillTo(pushed byte, offsetBitAddress int) {
+	if offsetBitAddress >= data.Offset {
+		return
+	}
+
 	// Jump to next byte
 	restingBits := data.Offset % 8
 	if restingBits != 0 {

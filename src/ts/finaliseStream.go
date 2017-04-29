@@ -1,7 +1,7 @@
 package ts
 
 
-func FinaliseFragment(data FragmentData) (bytes []byte) {
+func FinaliseFragment(data *FragmentData) (bytes []byte) {
 
 	bytes = make([]byte, 0)
 

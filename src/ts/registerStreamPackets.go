@@ -1,7 +1,7 @@
 package ts
 
 // Create Elementary stream packets containing our stream src
-func RegisterStreamPackets(streamInfo StreamInfo, samplesInfo []SampleInfo, fragment FragmentData) {
+func RegisterStreamPackets(streamInfo StreamInfo, samplesInfo []SampleInfo, fragment *FragmentData) {
 
 	// For each sample
 	for _, sample := range samplesInfo {
@@ -9,10 +9,10 @@ func RegisterStreamPackets(streamInfo StreamInfo, samplesInfo []SampleInfo, frag
 		elementaryStream := CreateElementaryStream(streamInfo, sample)
 
 		// Create packets stream
-		packets := createPackets(streamInfo, samplesInfo)
+		fragment.pes = createPackets(streamInfo, samplesInfo)
 
 		// Fill packets payload
-		fillPackets(packets, elementaryStream)
+		fillPackets(&fragment.pes, elementaryStream)
 	}
 }
 
@@ -43,11 +43,11 @@ func CreateElementaryStream(stream StreamInfo, sample SampleInfo) (bytes []byte)
 	data := NewData(int(packetLength)*8)
 	data.PushUInt(1, 24)
 	data.PushUInt(stream.streamId, 8)
-	data.PushUInt(8, (size + 4)/8)
+	data.PushUInt(sample.size, 16)
 	data.PushUInt(1, 1)
 	data.PushUInt(0, 7)
 	data.PushUInt(flag7, 8)
-	data.PushUInt(headerLength, 8)
+	data.PushUInt(headerLength - 8, 8)
 
 	// If CTS needed
 	if sample.hasCTS {
@@ -63,11 +63,9 @@ func CreateElementaryStream(stream StreamInfo, sample SampleInfo) (bytes []byte)
 	data.FillTo(0xff, int(headerLength * 8))
 
 	// Fill with the sample data
-	savedOffset := stream.mdat.Offset
-	savedSize	:= stream.mdat.Size
+	stream.mdat.Offset = sample.mdatOffset
+	stream.mdat.Size = sample.mdatSize
 	data.PushAll(stream.mdat.ToBytes())
-	stream.mdat.Offset = savedOffset
-	stream.mdat.Size = savedSize
 	return
 }
 
@@ -108,9 +106,14 @@ func createPackets(info StreamInfo, sampleinfo []SampleInfo) (packets []PES){
 		firstPacket.setAdaptationControl(true, true)
 
 		// Compute the number of fragments needed
-		restingSize := uint32(188 - firstPacket.AdaptationField.Size())
+		restingSize := uint32(188 - firstPacket.RestingSize())
 		firstPacket.Payload.EmptySize = restingSize
-		neededPackets := (sample.size - restingSize)/184
+
+		neededPackets := uint32(0)
+		if restingSize < sample.size {
+			neededPackets = (sample.size - restingSize)/184
+		}
+
 
 		// Create packets
 		packets = make([]PES, neededPackets + 1)
@@ -128,7 +131,7 @@ func createPackets(info StreamInfo, sampleinfo []SampleInfo) (packets []PES){
 	return
 }
 
-func fillPackets(packets []PES, elementaryStream []byte) {
+func fillPackets(packets *[]PES, elementaryStream []byte) {
 
 	offset := uint32(0)
 	finalSize := uint32(len(elementaryStream))
@@ -140,11 +143,11 @@ func fillPackets(packets []PES, elementaryStream []byte) {
 	// While there is data left
 	for offset != finalSize {
 		// Get the corresponding part of the packet
-		payloadSize = uint32(packets[packetId].Payload.Size())
+		payloadSize = uint32((*packets)[packetId].Payload.Size())
 		extractedSize = Min32(payloadSize, finalSize - offset)
 
 		// Register the payload
-		packets[packetId].Data = elementaryStream[offset:offset+extractedSize]
+		(*packets)[packetId].Data = elementaryStream[offset:offset+extractedSize]
 
 		// Go to next packet
 		offset += extractedSize
@@ -157,7 +160,7 @@ func fillPackets(packets []PES, elementaryStream []byte) {
 	if lastRestingSize > 0  {
 		fillingBytes := NewData(int(lastRestingSize*8))
 		fillingBytes.FillRemaining(0xff)
-		packets[packetId].Data = append(packets[packetId].Data, fillingBytes.Data...)
+		(*packets)[packetId].Data = append((*packets)[packetId].Data, fillingBytes.Data...)
 	}
 
 }

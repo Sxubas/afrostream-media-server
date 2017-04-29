@@ -55,8 +55,21 @@ func (packet Packet) ToBytes() (data Data) {
 	return
 }
 
+func (packet Packet) RestingSize() (size int) {
+
+	// Get header
+	size = packet.Header.Size()
+
+	// Get adaptation field
+	if packet.HasAdaptationField() {
+		size += packet.Header.Size()
+	}
+
+	return
+}
+
 func (header Header) ToBytes() (data Data) {
-	data = *NewData(4)
+	data = *NewData(header.Size())
 	data.Write(0x47)
 
 	data.PushObj(header.TransportErrorIndicator, 1)
@@ -67,6 +80,11 @@ func (header Header) ToBytes() (data Data) {
 	data.PushObj(header.AdaptationFieldControl, 2)
 	data.PushObj(header.ContinuityCounter, 4)
 	return
+}
+
+
+func (header Header) Size() (int) {
+	return 4
 }
 
 func (packet Packet) Size() (int) {
@@ -87,7 +105,7 @@ func (pcr PCR) ToBytes() (data Data) {
 func (field AdaptationField) ToBytes() (data Data) {
 	// Compute Adaptation length adding the first byte length
 	adaptationLength := field.GetAdaptationLength()
-	data = *NewData(int(adaptationLength + 1))
+	data = *NewData(field.Size())
 
 	data.PushObj(adaptationLength, 8)
 	data.PushObj(field.DiscontinuityIndicator, 1)
@@ -108,6 +126,10 @@ func (field AdaptationField) ToBytes() (data Data) {
 	result := int(adaptationLength + 1) * 8
 	data.FillTo(0xff, result)
 	return
+}
+
+func (field AdaptationField) Size() (int) {
+	return int(field.GetAdaptationLength()+ 1)
 }
 
 func (field AdaptationField) GetAdaptationLength() (byte) {

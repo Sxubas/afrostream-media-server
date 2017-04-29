@@ -11,7 +11,7 @@ type SampleInfo struct {
 
 	isIFrameType bool
 
-	mdatOffset uint32
+	mdatOffset int64
 	mdatSize   uint32
 
 	size uint32

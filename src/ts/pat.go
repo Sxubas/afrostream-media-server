@@ -78,7 +78,7 @@ func (section ProgramAssociationSection) ToBytes() (data Data) {
 }
 
 func (section ProgramAssociationSection) Size() (int) {
-	return 	int(section.GetSectionLength() + 3) + 4 * len(section.Sections)
+	return 	int(section.GetSectionLength() + 3) + 4 * len(section.Sections) + 4
 
 }
 

@@ -2190,6 +2190,10 @@ func (mdat MdatBox) Bytes() (data []byte) {
 }
 
 func (mdat MdatBox) ToBytes() (data []byte) {
+	if mdat.Filename == "" {
+		return make([]byte, 0)
+	}
+
 	boxSize := mdat.Size
 	data = make([]byte, boxSize)
 	f, err := os.Open(mdat.Filename)

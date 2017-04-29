@@ -95,7 +95,7 @@ func (section ProgramMapSection) ToBytes() (data Data) {
 
 func (section ProgramMapSection) Size() (int) {
 	sectionLength := section.GetSectionLength()
-	return sectionLength + 3 // Bytes before section length
+	return sectionLength + 3 + 4 // Bytes before section length + CRC32
 }
 
 func (section ProgramMapSubSection) ToBytes() (data Data) {
@@ -167,18 +167,6 @@ func NewPMT(PCR_PID uint16) (pmt *PMT) {
 	pmt.Section.SectionLength = 13
 	pmt.Section.CurrentNextIndicator = 1
 	pmt.Section.PCR_PID = PCR_PID
-
-	pmt.Section.Sections = make([]ProgramMapSubSection, 2)
-
-	// Register video stream
-	pmt.Section.Sections[0].StreamType = 27
-	pmt.Section.Sections[0].ElementaryPID = 256
-	pmt.Section.Sections[0].ESInfoLength = 0
-
-	// Register audio stream
-	pmt.Section.Sections[1].StreamType = 15
-	pmt.Section.Sections[1].ElementaryPID = 257
-	pmt.Section.Sections[1].ESInfoLength = 0 // 6b
 
 	return
 }

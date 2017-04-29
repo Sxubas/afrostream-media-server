@@ -1,7 +1,9 @@
 package ts
 
 // Get information on the fragment. Start and end of the samples list
-func GetFragmentInfo(streamInfo StreamInfo, fragmentNumber uint32, fragmentDuration uint32) (fragmentInfo FragmentInfo) {
+func GetFragmentInfo(streamInfo *StreamInfo, fragmentNumber uint32, fragmentDuration uint32) (fragmentInfo *FragmentInfo) {
+
+	fragmentInfo = new(FragmentInfo)
 
 	// Set number and duration
 	fragmentInfo.number = fragmentNumber
@@ -9,21 +11,21 @@ func GetFragmentInfo(streamInfo StreamInfo, fragmentNumber uint32, fragmentDurat
 
 	// Get start and end of all samples
 	// Save I-Frames indices to use it as RAP (Random access point)
-	registerStartAndEndOfFragment(streamInfo, fragmentInfo)
+	registerStartAndEndOfFragment(*streamInfo, fragmentInfo)
 
 	// Retrieve MDAT offset and size
 	registerMdatOffset(streamInfo, fragmentInfo)
 
 	// Retrieve CTTS start Offset for CTS
-	registerCTSStart(streamInfo, fragmentInfo)
+	registerCTSStart(*streamInfo, fragmentInfo)
 
 	// Retrieve STTS start offset for DTS
-	registerDTSStart(streamInfo, fragmentInfo)
+	registerDTSStart(*streamInfo, fragmentInfo)
 
 	return
 }
 
-func registerStartAndEndOfFragment(stream StreamInfo, frag FragmentInfo) {
+func registerStartAndEndOfFragment(stream StreamInfo, frag *FragmentInfo) {
 	// Init data
 	sampleStart := uint32((((float64(frag.number) - 1) * float64(frag.duration)) * float64(stream.Timescale)) / float64(stream.SampleDelta))
 	sampleEnd := uint32(((float64(frag.number) * float64(frag.duration)) * float64(stream.Timescale)) / float64(stream.SampleDelta))
@@ -64,19 +66,19 @@ func registerStartAndEndOfFragment(stream StreamInfo, frag FragmentInfo) {
 	frag.iFramesIndices = iFramesIndices
 }
 
-func registerMdatOffset(stream StreamInfo, frag FragmentInfo) {
+func registerMdatOffset(stream *StreamInfo, frag *FragmentInfo) {
 	// Get to the first element using stsz table referecing size
 	var i uint32
 	for i = 0; i < frag.sampleStart; i++ {
 		if stream.stsz.SampleSize == 0 {
-			stream.mdat.Offset += int64(stream.stsz.EntrySize[i])
-		} else {
 			stream.mdat.Offset += int64(stream.stsz.SampleSize)
+		} else {
+			stream.mdat.Offset += int64(stream.stsz.EntrySize[i])
 		}
 	}
 }
 
-func registerCTSStart(stream StreamInfo, frag FragmentInfo) {
+func registerCTSStart(stream StreamInfo, frag *FragmentInfo) {
 
 	var i uint32
 
@@ -98,7 +100,7 @@ func registerCTSStart(stream StreamInfo, frag FragmentInfo) {
 	}
 }
 
-func registerDTSStart(stream StreamInfo, frag FragmentInfo) {
+func registerDTSStart(stream StreamInfo, frag *FragmentInfo) {
 
 	var i uint32
 

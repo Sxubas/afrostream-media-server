@@ -2,63 +2,65 @@ package ts
 
 
 // Get information on all samples in the fragment
-func GetSamplesInfo(stream StreamInfo, fragmentInfo FragmentInfo, fragment FragmentData) (sampleInfo []SampleInfo) {
+func GetSamplesInfo(stream StreamInfo, fragmentInfo FragmentInfo) (sampleInfo []SampleInfo) {
 
 	sampleInfo = make([]SampleInfo, fragmentInfo.getSampleCount())
 
 	// Get size And offset of the sample in MDat
-	registerSamplesSizes(stream, fragmentInfo, sampleInfo)
+	registerSamplesSizes(stream, fragmentInfo, &sampleInfo)
 
 	if stream.isVideo() {
 
 		// Registers all iFrames
-		registerISamples(fragmentInfo, sampleInfo)
+		registerISamples(fragmentInfo, &sampleInfo)
 
 		// Compute the pcr
-		registerPCRSamples(stream, fragmentInfo, sampleInfo)
+		registerPCRSamples(stream, fragmentInfo, &sampleInfo)
 
 		// Retrieve the compositionTimeOffset and decodingTimeOffset
-		registerCTSAndDTSSamples(stream, fragmentInfo, sampleInfo)
+		if stream.compositionTimeOffset {
+			registerCTSAndDTSSamples(stream, fragmentInfo, &sampleInfo)
+		}
 	}
 
 	return
 }
 
-func registerSamplesSizes(stream StreamInfo, info FragmentInfo, sampleInfo []SampleInfo) {
+func registerSamplesSizes(stream StreamInfo, info FragmentInfo, sampleInfo *[]SampleInfo) {
 
-	offset := uint32(stream.mdat.Offset)
+	offset := stream.mdat.Offset
 
 	if stream.stsz.SampleSize == 0 {
-		for i, sample := range sampleInfo {
-			sample.size = stream.stsz.EntrySize[uint32(i) + info.sampleStart]
-			sample.mdatOffset = offset
-			offset += sample.size
-		}
-	} else {
-		for _, sample := range sampleInfo {
+		for _, sample := range *sampleInfo {
 			sample.size = stream.stsz.SampleSize
 			sample.mdatOffset = offset
-			offset += sample.size
+			offset += int64(sample.size)
+		}
+	} else {
+		for i, sample := range *sampleInfo {
+			sample.size = stream.stsz.EntrySize[uint32(i) + info.sampleStart]
+			sample.mdatOffset = offset
+			offset += int64(sample.size)
 		}
 	}
 }
 
-func registerISamples(info FragmentInfo, sampleInfo []SampleInfo) {
+func registerISamples(info FragmentInfo, sampleInfo *[]SampleInfo) {
 
 	for _, iFrameId := range info.iFramesIndices{
 
 		if info.isFrameInFragment(iFrameId) {
-			sampleInfo[iFrameId-info.sampleStart].isIFrameType = true
+			(*sampleInfo)[iFrameId-info.sampleStart].isIFrameType = true
 		}
 	}
 }
 
-func registerPCRSamples(stream StreamInfo, fragmentInfo FragmentInfo, sampleInfo []SampleInfo) {
+func registerPCRSamples(stream StreamInfo, fragmentInfo FragmentInfo, sampleInfo *[]SampleInfo) {
 
 	pcrEmitter := IEmitter{}
 	pcrEmitter.Min_emit = 40
 
-	for sampleID, sample := range sampleInfo {
+	for sampleID, sample := range *sampleInfo {
 
 		sample.hasPCR = pcrEmitter.Emit()
 		if sample.hasPCR {
@@ -69,7 +71,7 @@ func registerPCRSamples(stream StreamInfo, fragmentInfo FragmentInfo, sampleInfo
 	}
 }
 
-func registerCTSAndDTSSamples(stream StreamInfo, fragmentInfo FragmentInfo, sampleInfo []SampleInfo) {
+func registerCTSAndDTSSamples(stream StreamInfo, fragmentInfo FragmentInfo, sampleInfo *[]SampleInfo) {
 
 	emitter := IEmitter{}
 	emitter.Min_emit = 1
@@ -80,7 +82,7 @@ func registerCTSAndDTSSamples(stream StreamInfo, fragmentInfo FragmentInfo, samp
 	sttsSampleCount := fragmentInfo.sttsSampleCount
 	dts := fragmentInfo.dts
 
-	for _, sample := range sampleInfo {
+	for _, sample := range *sampleInfo {
 
 		// Update Composition time offset
 		if cttsSampleCount > 0 {
@@ -94,6 +96,7 @@ func registerCTSAndDTSSamples(stream StreamInfo, fragmentInfo FragmentInfo, samp
 				cttsOffset++
 			}
 		}
+
 
 		// Update Decoding time offset
 		dts += uint64(stream.stts.Entries[sttsOffset].SampleDelta)
