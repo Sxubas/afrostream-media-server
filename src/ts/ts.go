@@ -11,7 +11,7 @@ func CreateHLSFragmentWithConf(dConf mp4.Conf, filename string, fragmentNumber u
 	modifiedFragment := FragmentData{}
 
 	// 1) analyse the stream and found get main information
-	streamInfo := AnalyseStream(mp4, filename)
+	streamInfo := AnalyseStream(dConf, filename)
 
 	// 2) Create program packets
 	RegisterProgramPackets(streamInfo, modifiedFragment)

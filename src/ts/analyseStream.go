@@ -7,21 +7,21 @@ import (
 // Analyse the stream and get main information
 func AnalyseStream(dConf mp4.Conf, filename string) (streamInfo StreamInfo){
 	// Save conf
-	info.Conf = dConf
-	info.filename = filename
+	streamInfo.Conf = dConf
+	streamInfo.filename = filename
 
 	// Retrieve needed boxes
-	LoadBoxes(info)
+	LoadBoxes(streamInfo)
 
 	// Check if it has composition offset (PTS/DTS)
-	info.compositionTimeOffset = info.isVideo() && dConf.Video.CttsBoxOffset != 0
+	streamInfo.compositionTimeOffset = streamInfo.isVideo() && dConf.Video.CttsBoxOffset != 0
 
-	if info.isVideo() {
-		info.PID = 257
-		info.streamId = 224
+	if streamInfo.isVideo() {
+		streamInfo.PID = 257
+		streamInfo.streamId = 224
 	} else {
-		info.PID = 256
-		info.streamId = 127
+		streamInfo.PID = 256
+		streamInfo.streamId = 127
 	}
 
 	return

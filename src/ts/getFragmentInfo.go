@@ -105,7 +105,7 @@ func registerDTSStart(stream StreamInfo, frag FragmentInfo) {
 	for i = 0; i < frag.sampleStart; i++ {
 		// Getting the number of ctts offset
 		if stream.compositionTimeOffset {
-			frag.dts += stream.stts.Entries[frag.sttsOffset].SampleDelta
+			frag.dts += uint64(stream.stts.Entries[frag.sttsOffset].SampleDelta)
 			if frag.sttsSampleCount > 0 {
 				frag.sttsSampleCount--
 				if frag.sttsSampleCount == 0 {

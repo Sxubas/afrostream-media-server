@@ -96,7 +96,7 @@ func registerCTSAndDTSSamples(stream StreamInfo, fragmentInfo FragmentInfo, samp
 		}
 
 		// Update Decoding time offset
-		dts += stream.stts.Entries[sttsOffset].SampleDelta
+		dts += uint64(stream.stts.Entries[sttsOffset].SampleDelta)
 		if sttsSampleCount > 0 {
 			sttsSampleCount--
 			if sttsSampleCount == 0 {
@@ -113,7 +113,7 @@ func registerCTSAndDTSSamples(stream StreamInfo, fragmentInfo FragmentInfo, samp
 		sample.hasCTS = sample.hasDTS
 		if sample.hasDTS {
 			sample.DTS = dts
-			sample.CTS = stream.ctts.Entries[cttsOffset].SampleOffset + dts // - dConf.MediaTime
+			sample.CTS = uint64(stream.ctts.Entries[cttsOffset].SampleOffset) + dts // - dConf.MediaTime
 			emitter.Reset()
 		}
 	}

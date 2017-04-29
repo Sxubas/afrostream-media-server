@@ -102,7 +102,9 @@ func createPackets(info StreamInfo, sampleinfo []SampleInfo) (packets []PES){
 		}
 
 		// IF isIFrame set RAP
-		firstPacket.RandomAccessIndicator = byte(sample.IsIframe())
+		if sample.IsIframe() {
+			firstPacket.RandomAccessIndicator = 1
+		}
 		firstPacket.setAdaptationControl(true, true)
 
 		// Compute the number of fragments needed

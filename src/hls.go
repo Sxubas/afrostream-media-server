@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"mp4"
+	"encoding/json"
 )
 
 func debug() {
@@ -21,10 +22,14 @@ func main() {
 
 
 func launch() {
-	mp4m := mp4.ParseFile("small.mp4", "en")
-	fragment := ts.CreateHLSFragmentDebug(mp4m.Boxes, 1, 10)
-	printFragments(fragment, 10)
-	writeBytes("sample.ts", fragment)
+	data, _ := readFile1("video" + ".json")
+	var jConfig mp4.JsonConfig
+	json.Unmarshal(data, &jConfig)
+
+	track := jConfig.Tracks["video"][0]
+	fragment := ts.CreateHLSFragmentWithConf(*track.Config, track.File, 0, jConfig.SegmentDuration)
+	writeSample("sample.ts", fragment)
+
 }
 
 func printFragments(fragment []ts.Bytes, max int) {
@@ -44,3 +49,38 @@ func writeBytes(filename string, fragment []ts.Bytes) {
 	}
 }
 
+
+func writeSample(filename string, fragment []byte) {
+	f, _ := os.Create(filename)
+
+	defer f.Close()
+
+	f.Write(fragment)
+}
+
+func readFile1(filename string) (data []byte, r error) {
+	f, err := os.Open(filename)
+	if err != nil {
+		r = err
+		return
+	}
+	fi, err := f.Stat()
+	if err != nil {
+		r = err
+		return
+	}
+	size := fi.Size()
+	data = make([]byte, size)
+	offset := 0
+	for size > 0 {
+		count, err := f.Read(data[offset:])
+		if err != nil {
+			r = err
+			return
+		}
+		size -= int64(count)
+		offset += count
+	}
+
+	return
+}

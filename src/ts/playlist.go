@@ -6,6 +6,7 @@ import (
 	"mp4"
 	"strconv"
 	"path"
+	"errors"
 )
 
 
@@ -53,10 +54,10 @@ func TreatM3U8Request(splitDirs []string, jConfig mp4.JsonConfig, VideoIdPath st
 			w.Write([]byte(videoDescriptor))
 			break
 		default:
-			return error("No media corresponding")
+			return errors.New("No media corresponding")
 		}
 	} else {
-		return error("Incorrect url access")
+		return errors.New("Incorrect url access")
 	}
 
 	return nil
@@ -70,7 +71,7 @@ func findLanguageTrack(lang string, tracks []mp4.TrackEntry) (mp4.TrackEntry, er
 			return track, nil
 		}
 	}
-	return nil, error("No language: " + lang)
+	return mp4.TrackEntry{}, errors.New("No language: " + lang)
 }
 
 func getNumberOfSegments(track mp4.TrackEntry, jConfig mp4.JsonConfig) (int) {
@@ -81,11 +82,11 @@ func getIdTrack(idStr string, tracks []mp4.TrackEntry) (mp4.TrackEntry, error) {
 
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		return nil, error("Not a valid quality stream: " + idStr)
+		return mp4.TrackEntry{}, errors.New("Not a valid quality stream: " + idStr)
 	}
 
 	if id < 0 || id >= len(tracks) {
-		return nil, error("No stream corresponding to this quality: " + idStr)
+		return mp4.TrackEntry{}, errors.New("No stream corresponding to this quality: " + idStr)
 	}
 
 	return tracks[id], nil
@@ -95,18 +96,18 @@ func TreatTSRequest(splitDirs []string, jConfig mp4.JsonConfig, videoIdPath stri
 	mediaType := splitDirs[0]
 
 	if len(splitDirs) != 3 {
-		 return error("Incorrect url access")
+		 return errors.New("Incorrect url access")
 	}
 	splitFragmentNumber := strings.Split(splitDirs[2], ".")
 
 	if len(splitFragmentNumber) < 2 {
-		return error("Incorrect fragment number")
+		return errors.New("Incorrect fragment number")
 	}
 
 	fragmentNumber, err := strconv.Atoi(splitFragmentNumber[0])
 
 	if err != nil {
-		return error("Incorrect fragment number: " + splitFragmentNumber[0])
+		return errors.New("Incorrect fragment number: " + splitFragmentNumber[0])
 	}
 
 	var track mp4.TrackEntry
@@ -130,14 +131,14 @@ func TreatTSRequest(splitDirs []string, jConfig mp4.JsonConfig, videoIdPath stri
 		}
 		break
 	default:
-		return error("No media corresponding")
+		return errors.New("No media corresponding")
 	}
 
 	// Get the number of segment in this track
 	numberOfSegments := getNumberOfSegments(track, jConfig)
 
 	if fragmentNumber < 0 || fragmentNumber >= numberOfSegments {
-		return error("Incorrect fragment number :" + splitFragmentNumber[0])
+		return errors.New("Incorrect fragment number :" + splitFragmentNumber[0])
 	}
 
 	filePath := path.Dir(videoIdPath) + "/" + track.File

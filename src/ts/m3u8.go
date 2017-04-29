@@ -81,4 +81,6 @@ func CreateMediaDescriptor(videoId string, param string, extension string, fragm
 	}
 
 	s += "#EXT-X-ENDLIST"
+
+	return
 }

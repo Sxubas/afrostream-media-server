@@ -10,7 +10,7 @@ type FragmentInfo struct {
 	cttsSampleCount uint32
 	sttsOffset		uint32
 	sttsSampleCount uint32
-	dts				uint32
+	dts				uint64
 }
 
 func (info FragmentInfo) getSampleCount() (uint32) {
