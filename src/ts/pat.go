@@ -90,6 +90,7 @@ func NewPAT() (pat *PAT) {
 	pat.PayloadUnitStartIndicator = 1
 	pat.AdaptationFieldControl = 1
 
+
 	pat.Section.SectionSyntaxIndicator = 1
 	pat.Section.SectionLength = 13
 	pat.Section.TransportStreamID = 1
@@ -99,7 +100,7 @@ func NewPAT() (pat *PAT) {
 
 	// Set PMT PID
 	pat.Section.Sections[0].ProgramNumber = 1
-	pat.Section.Sections[0].ProgramMapID = 32
+	pat.Section.Sections[0].ProgramMapID = 4096
 
 	return
 }

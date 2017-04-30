@@ -159,7 +159,7 @@ func (data *Data) FillRemaining(pushed byte) {
 }
 
 func (data *Data) FillTo(pushed byte, offsetBitAddress int) {
-	if offsetBitAddress >= data.Offset {
+	if data.Offset >= len(data.Data) * 8 {
 		return
 	}
 
@@ -257,9 +257,9 @@ func (data *Data) GetSpaceLeftInByte() int {
 }
 
 // Create Data with offset support
-func NewData(length int) *Data {
+func NewData(byteSize int) *Data {
 	data := new(Data)
-	data.Data = make([]byte, length)
+	data.Data = make([]byte, byteSize)
 	return data
 }
 

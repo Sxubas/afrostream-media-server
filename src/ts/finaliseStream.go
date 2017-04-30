@@ -1,5 +1,6 @@
 package ts
 
+import "fmt"
 
 func FinaliseFragment(data *FragmentData) (bytes []byte) {
 
@@ -13,7 +14,7 @@ func FinaliseFragment(data *FragmentData) (bytes []byte) {
 	patEmitter.Min_emit = 200
 	pmtEmitter.Min_emit = 40
 
-	for _, packet := range data.pes {
+	for i, packet := range data.pes {
 
 		if patEmitter.Emit() {
 			bytes = append(bytes, pat...)

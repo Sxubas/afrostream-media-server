@@ -31,10 +31,6 @@ func CreateHLSFragmentWithConf(dConf mp4.Conf, filename string, fragmentNumber u
 
 	// 6) Create our fragment assembling all created packets
 	fragment := FinaliseFragment(&modifiedFragment)
-	data := Data{}
-	data.Data = fragment
-	data.PrintHex()
-
 	return fragment
 }
 

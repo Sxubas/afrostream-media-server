@@ -157,7 +157,7 @@ func fillPackets(packets *[]PES, elementaryStream []byte) {
 	}
 	lastRestingSize := payloadSize - extractedSize
 	if lastRestingSize > 0  {
-		fillingBytes := NewData(int(lastRestingSize*8))
+		fillingBytes := NewData(int(lastRestingSize))
 		fillingBytes.FillRemaining(0xff)
 		(*packets)[packetId].Data = append((*packets)[packetId].Data, fillingBytes.Data...)
 	}

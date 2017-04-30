@@ -156,13 +156,13 @@ func (packet Packet) HasPayload() bool {
 	return packet.Header.AdaptationFieldControl&1 != 0
 }
 
-func (field AdaptationField) setPCR(PCR PCR) {
+func (field *AdaptationField) setPCR(PCR PCR) {
 	field.PCR = PCR
 	field.PCR_Flag = 1
 	field.AdaptationFieldLength += 6
 }
 
-func (packet Packet) setAdaptationControl(adaptationFieldFlag bool, payloadFlag bool) {
+func (packet *Packet) setAdaptationControl(adaptationFieldFlag bool, payloadFlag bool) {
 	if adaptationFieldFlag {
 		if payloadFlag {
 			packet.AdaptationFieldControl = 0x03
