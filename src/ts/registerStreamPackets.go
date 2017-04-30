@@ -9,14 +9,14 @@ func RegisterStreamPackets(streamInfo StreamInfo, samplesInfo []SampleInfo, frag
 		elementaryStream := CreateElementaryStream(streamInfo, sample)
 
 		// Create packets stream
-		fragment.pes = createPackets(streamInfo, samplesInfo)
+		fragment.pes = createPackets(streamInfo, sample, uint32(len(elementaryStream)))
 
 		// Fill packets payload
 		fillPackets(&fragment.pes, elementaryStream)
 	}
 }
 
-func CreateElementaryStream(stream StreamInfo, sample SampleInfo) (bytes []byte) {
+func CreateElementaryStream(stream StreamInfo, sample SampleInfo) ([]byte) {
 
 	size := 24 + 8 + 16 // startCode + stream id + ps packet length
 
@@ -37,10 +37,10 @@ func CreateElementaryStream(stream StreamInfo, sample SampleInfo) (bytes []byte)
 		flag7 |= 1 << 6
 	}
 
-	headerLength := uint32(size + 4)/8  // Superior byte
+	headerLength := RoundDivision32(uint32(size), 8)  // rounded to upper byte
 	packetLength := headerLength + sample.size
 
-	data := NewData(int(packetLength)*8)
+	data := NewData(int(packetLength))
 	data.PushUInt(1, 24)
 	data.PushUInt(stream.streamId, 8)
 	data.PushUInt(sample.size, 16)
@@ -66,7 +66,7 @@ func CreateElementaryStream(stream StreamInfo, sample SampleInfo) (bytes []byte)
 	stream.mdat.Offset = sample.mdatOffset
 	stream.mdat.Size = sample.mdatSize
 	data.PushAll(stream.mdat.ToBytes())
-	return
+	return data.Data
 }
 
 func pushTimestamp(timestamp uint64, data *Data) {
@@ -78,55 +78,49 @@ func pushTimestamp(timestamp uint64, data *Data) {
 	data.PushUInt(1, 1) 			// marker_bit
 }
 
-func createPackets(info StreamInfo, sampleinfo []SampleInfo) (packets []PES){
+func createPackets(info StreamInfo, sample SampleInfo, elementaryStreamSize uint32) (packets []PES){
 	// Create the first fragment with adaptation field
 	pid := info.PID
 	streamId := info.streamId
 
-	for _, sample := range sampleinfo {
-
-		// Create the first packet
-		var firstPacket PES = *NewStartStream(pid, streamId)
-		if sample.HasAdaptationField() {
-			firstPacket.AdaptationFieldControl = 0x03
-		} else {
-			firstPacket = *NewStream(pid)
-		}
-
-		if sample.hasPCR {
-			pcr := PCR{}
-			pcr.BaseMediaDecodeTime = sample.PCR
-			firstPacket.setPCR(pcr)
-		}
-
-		// IF isIFrame set RAP
-		if sample.IsIframe() {
-			firstPacket.RandomAccessIndicator = 1
-		}
-		firstPacket.setAdaptationControl(true, true)
-
-		// Compute the number of fragments needed
-		restingSize := uint32(188 - firstPacket.RestingSize())
-		firstPacket.Payload.EmptySize = restingSize
-
-		neededPackets := uint32(0)
-		if restingSize < sample.size {
-			neededPackets = (sample.size - restingSize)/184
-		}
-
-
-		// Create packets
-		packets = make([]PES, neededPackets + 1)
-		packets[0] = firstPacket
-
-		for i := uint32(1); i < neededPackets; i++ {
-			packets[i] = *NewStream(pid)
-			packets[i].setAdaptationControl(false, true)
-			packets[i].Payload.EmptySize = 184
-		}
+	// Create the first packet
+	var firstPacket PES = *NewStartStream(pid, streamId)
+	if sample.HasAdaptationField() {
+		firstPacket.AdaptationFieldControl = 0x03
+	} else {
+		firstPacket = *NewStream(pid)
 	}
 
+	if sample.hasPCR {
+		pcr := PCR{}
+		pcr.BaseMediaDecodeTime = sample.PCR
+		firstPacket.setPCR(pcr)
+	}
 
+	// IF isIFrame set RAP
+	if sample.IsIframe() {
+		firstPacket.RandomAccessIndicator = 1
+	}
+	firstPacket.setAdaptationControl(true, true)
+
+	// Compute the number of fragments needed
+	restingSize := uint32(188 - firstPacket.RestingSize())
+	firstPacket.Payload.EmptySize = restingSize
+
+	neededPackets := uint32(0)
+	if restingSize < elementaryStreamSize {
+		neededPackets = RoundDivision32(elementaryStreamSize - restingSize, 184) // rounded
+	}
+
+	// Create packets
+	packets = make([]PES, neededPackets + 1)
+	packets[0] = firstPacket
+
+	for i := uint32(1); i < neededPackets + 1; i++ {
+		packets[i] = *NewStream(pid)
+		packets[i].setAdaptationControl(false, true)
+		packets[i].Payload.EmptySize = 184
+	}
 
 	return
 }
@@ -155,7 +149,9 @@ func fillPackets(packets *[]PES, elementaryStream []byte) {
 	}
 
 	// Fill the end of the last packet
-	packetId--
+	if packetId != 0 {
+		packetId--
+	}
 	lastRestingSize := payloadSize - extractedSize
 	if lastRestingSize > 0  {
 		fillingBytes := NewData(int(lastRestingSize*8))

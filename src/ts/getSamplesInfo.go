@@ -31,16 +31,18 @@ func registerSamplesSizes(stream StreamInfo, info FragmentInfo, sampleInfo *[]Sa
 	offset := stream.mdat.Offset
 
 	if stream.stsz.SampleSize == 0 {
-		for _, sample := range *sampleInfo {
-			sample.size = stream.stsz.SampleSize
-			sample.mdatOffset = offset
-			offset += int64(sample.size)
+		for i := 0; i < len(*sampleInfo); i++ {
+			(*sampleInfo)[i].mdatSize = stream.stsz.EntrySize[uint32(i) + info.sampleStart]
+			(*sampleInfo)[i].size = (*sampleInfo)[i].mdatSize
+			(*sampleInfo)[i].mdatOffset = offset
+			offset += int64((*sampleInfo)[i].mdatSize)
 		}
 	} else {
-		for i, sample := range *sampleInfo {
-			sample.size = stream.stsz.EntrySize[uint32(i) + info.sampleStart]
-			sample.mdatOffset = offset
-			offset += int64(sample.size)
+		for i := 0; i < len(*sampleInfo); i++ {
+			(*sampleInfo)[i].mdatSize = stream.stsz.SampleSize
+			(*sampleInfo)[i].size = (*sampleInfo)[i].mdatSize
+			(*sampleInfo)[i].mdatOffset = offset
+			offset += int64((*sampleInfo)[i].mdatSize)
 		}
 	}
 }

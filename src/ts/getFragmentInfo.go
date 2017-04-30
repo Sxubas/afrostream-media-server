@@ -71,9 +71,9 @@ func registerMdatOffset(stream *StreamInfo, frag *FragmentInfo) {
 	var i uint32
 	for i = 0; i < frag.sampleStart; i++ {
 		if stream.stsz.SampleSize == 0 {
-			stream.mdat.Offset += int64(stream.stsz.SampleSize)
-		} else {
 			stream.mdat.Offset += int64(stream.stsz.EntrySize[i])
+		} else {
+			stream.mdat.Offset += int64(stream.stsz.SampleSize)
 		}
 	}
 }

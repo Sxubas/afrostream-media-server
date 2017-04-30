@@ -27,3 +27,10 @@ func Max32(a, b uint32) uint32 {
 	}
 	return a
 }
+
+func RoundDivision32(a, b uint32) uint32 {
+	if a % b != 0 {
+		return (a / b) + 1
+	}
+	return a / b
+}
