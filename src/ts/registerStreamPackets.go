@@ -9,10 +9,13 @@ func RegisterStreamPackets(streamInfo StreamInfo, samplesInfo []SampleInfo, frag
 		elementaryStream := CreateElementaryStream(streamInfo, sample)
 
 		// Create packets stream
-		fragment.pes = createPackets(streamInfo, sample, uint32(len(elementaryStream)))
+		pes := createPackets(streamInfo, sample, uint32(len(elementaryStream)))
 
 		// Fill packets payload
-		fillPackets(&fragment.pes, elementaryStream)
+		fillPackets(&pes, elementaryStream)
+
+		// Append fragment to PES
+		fragment.pes = append(fragment.pes, pes...)
 	}
 }
 
