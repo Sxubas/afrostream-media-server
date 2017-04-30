@@ -14,18 +14,21 @@ func FinaliseFragment(data *FragmentData) (bytes []byte) {
 	patEmitter.Min_emit = 200
 	pmtEmitter.Min_emit = 40
 
-	for i, packet := range data.pes {
+	for _, packet := range data.pes {
 
 		if patEmitter.Emit() {
+			fmt.Println("patEmit")
 			bytes = append(bytes, pat...)
 			patEmitter.Reset()
 		}
 
 		if pmtEmitter.Emit() {
+			fmt.Println("pmtEmit")
 			bytes = append(bytes, pmt...)
 			pmtEmitter.Reset()
 		}
 
+		fmt.Println("PES")
 		bytes = append(bytes, packet.ToBytes().Data...)
 	}
 

@@ -28,11 +28,11 @@ type IEmitter struct {
 }
 
 
-func (emitter IEmitter) Reset() {
+func (emitter *IEmitter) Reset() {
 	emitter.NEmit = emitter.Min_emit
 }
 
-func (emitter IEmitter) Emit() (bool) {
+func (emitter *IEmitter) Emit() (bool) {
 	if emitter.HasEmitLeft() {
 		emitter.NEmit -= 1
 		return false
@@ -42,9 +42,4 @@ func (emitter IEmitter) Emit() (bool) {
 
 func (emitter IEmitter) HasEmitLeft() (bool) {
 	return emitter.NEmit > 0
-}
-
-
-func NewDefaultFragment() (fragmentData FragmentData) {
-	return
 }
