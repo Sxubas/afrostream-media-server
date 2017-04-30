@@ -1,5 +1,7 @@
 package ts
 
+import "fmt"
+
 // Create Elementary stream packets containing our stream src
 func RegisterStreamPackets(streamInfo StreamInfo, samplesInfo []SampleInfo, fragment *FragmentData) {
 
@@ -46,7 +48,7 @@ func CreateElementaryStream(stream StreamInfo, sample SampleInfo) ([]byte) {
 	data := NewData(int(packetLength))
 	data.PushUInt(1, 24)
 	data.PushUInt(sample.pesStream, 8)
-	data.PushUInt(sample.size, 16)
+	data.PushUInt(0, 16) //sample.size
 	data.PushUInt(1, 1)
 	data.PushUInt(0, 7)
 	data.PushUInt(flag7, 8)
@@ -106,8 +108,24 @@ func createPackets(info StreamInfo, sample SampleInfo, elementaryStreamSize uint
 	firstPacket.Payload.EmptySize = restingSize
 
 	neededPackets := uint32(0)
+	specialStuffing := false
+	var sizeRestingForField uint32
+	var lastPacketPESSize uint32
+	field := AdaptationField{}
+
 	if restingSize < elementaryStreamSize {
-		neededPackets = RoundDivision32(elementaryStreamSize - restingSize, 184) // rounded
+		lastPacketPESSize = (elementaryStreamSize - restingSize) % 184
+		neededPackets = RoundDivision32(elementaryStreamSize - restingSize, 184)
+
+		// Check if there is enough space to write payload and adaptation field
+		sizeRestingForField = 184 - lastPacketPESSize
+		if sizeRestingForField != 0 && sizeRestingForField < uint32(field.Size()) {
+			neededPackets++
+			specialStuffing = true
+		}
+	} else {
+		lastPacketPESSize = firstPacket.EmptySize
+		sizeRestingForField = firstPacket.EmptySize - lastPacketPESSize
 	}
 
 	// Create packets
@@ -118,6 +136,25 @@ func createPackets(info StreamInfo, sample SampleInfo, elementaryStreamSize uint
 		packets[i].setAdaptationControl(false, true)
 		packets[i].Payload.EmptySize = 184
 		packets[i].ContinuityCounter = byte(i % 16)
+	}
+
+
+	if specialStuffing {
+		// Add adaptation field for last two packets
+		fmt.Println("Special case")
+		packets[len(packets) - 2].setAdaptationControl(true, true)
+		packets[len(packets) - 2].setTotalAdaptationSize(byte(packets[len(packets) - 1].EmptySize - lastPacketPESSize))
+		restingPES := lastPacketPESSize - uint32(field.Size())
+
+		packets[len(packets) - 1].setAdaptationControl(true, true)
+		packets[len(packets) - 1].setTotalAdaptationSize(byte(packets[len(packets) - 1].EmptySize - lastPacketPESSize))
+		packets[len(packets) - 1].Payload.EmptySize = restingPES
+
+	} else if lastPacketPESSize != packets[len(packets) - 1].Payload.EmptySize {
+		// Fill last packet adaptation field
+		packets[len(packets) - 1].setAdaptationControl(true, true)
+		packets[len(packets) - 1].setTotalAdaptationSize(byte(packets[len(packets) - 1].EmptySize - lastPacketPESSize))
+		packets[len(packets) - 1].Payload.EmptySize = lastPacketPESSize
 	}
 
 	return
@@ -135,7 +172,7 @@ func fillPackets(packets *[]PES, elementaryStream []byte) {
 	// While there is data left
 	for offset != finalSize {
 		// Get the corresponding part of the packet
-		payloadSize = uint32((*packets)[packetId].Payload.Size())
+		payloadSize = uint32((*packets)[packetId].Payload.EmptySize)
 		extractedSize = Min32(payloadSize, finalSize - offset)
 
 		// Register the payload
@@ -144,17 +181,6 @@ func fillPackets(packets *[]PES, elementaryStream []byte) {
 		// Go to next packet
 		offset += extractedSize
 		packetId++
-	}
-
-	// Fill the end of the last packet
-	if packetId != 0 {
-		packetId--
-	}
-	lastRestingSize := payloadSize - extractedSize
-	if lastRestingSize > 0  {
-		fillingBytes := NewData(int(lastRestingSize))
-		fillingBytes.FillRemaining(0xff)
-		(*packets)[packetId].Data = append((*packets)[packetId].Data, fillingBytes.Data...)
 	}
 
 }

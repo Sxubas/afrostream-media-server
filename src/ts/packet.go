@@ -177,3 +177,7 @@ func (packet *Packet) setAdaptationControl(adaptationFieldFlag bool, payloadFlag
 	}
 
 }
+
+func (field *AdaptationField) setTotalAdaptationSize(size byte) {
+	field.AdaptationFieldLength = size - 1 // Remove first byte
+}
