@@ -12,7 +12,7 @@ func GetSamplesInfo(stream StreamInfo, fragmentInfo FragmentInfo) (sampleInfo []
 	if stream.isVideo() {
 
 		// Registers all iFrames
-		registerISamples(fragmentInfo, &sampleInfo)
+		// registerISamples(fragmentInfo, &sampleInfo)
 
 		// Compute the pcr
 		registerPCRSamples(stream, fragmentInfo, &sampleInfo)
@@ -32,6 +32,8 @@ func registerSamplesSizes(stream StreamInfo, info FragmentInfo, sampleInfo *[]Sa
 
 	if stream.stsz.SampleSize == 0 {
 		for i := 0; i < len(*sampleInfo); i++ {
+			(*sampleInfo)[i].pesStream = 224
+
 			(*sampleInfo)[i].mdatSize = stream.stsz.EntrySize[uint32(i) + info.sampleStart]
 			(*sampleInfo)[i].size = (*sampleInfo)[i].mdatSize
 			(*sampleInfo)[i].mdatOffset = offset
@@ -39,6 +41,8 @@ func registerSamplesSizes(stream StreamInfo, info FragmentInfo, sampleInfo *[]Sa
 		}
 	} else {
 		for i := 0; i < len(*sampleInfo); i++ {
+			(*sampleInfo)[i].pesStream = 224
+
 			(*sampleInfo)[i].mdatSize = stream.stsz.SampleSize
 			(*sampleInfo)[i].size = (*sampleInfo)[i].mdatSize
 			(*sampleInfo)[i].mdatOffset = offset
@@ -49,8 +53,8 @@ func registerSamplesSizes(stream StreamInfo, info FragmentInfo, sampleInfo *[]Sa
 
 func registerISamples(info FragmentInfo, sampleInfo *[]SampleInfo) {
 
-	for _, iFrameId := range info.iFramesIndices{
-
+	for i := 0; i < len(info.iFramesIndices); i++ {
+		iFrameId := info.iFramesIndices[i]
 		if info.isFrameInFragment(iFrameId) {
 			(*sampleInfo)[iFrameId-info.sampleStart].isIFrameType = true
 		}
@@ -60,14 +64,13 @@ func registerISamples(info FragmentInfo, sampleInfo *[]SampleInfo) {
 func registerPCRSamples(stream StreamInfo, fragmentInfo FragmentInfo, sampleInfo *[]SampleInfo) {
 
 	pcrEmitter := IEmitter{}
-	pcrEmitter.Min_emit = 40
+	pcrEmitter.Min_emit = 1
 
-	for sampleID, sample := range *sampleInfo {
+	for i := 0; i < len(*sampleInfo); i++ {
 
-		sample.hasPCR = pcrEmitter.Emit()
-		if sample.hasPCR {
-			sample.PCR = uint64((fragmentInfo.sampleStart + uint32(sampleID))* stream.SampleDelta)
-
+		if pcrEmitter.Emit() {
+			(*sampleInfo)[i].PCR = uint64((fragmentInfo.sampleStart + uint32(i))* stream.SampleDelta)
+			(*sampleInfo)[i].hasPCR = true
 			pcrEmitter.Reset()
 		}
 	}
@@ -84,7 +87,7 @@ func registerCTSAndDTSSamples(stream StreamInfo, fragmentInfo FragmentInfo, samp
 	sttsSampleCount := fragmentInfo.sttsSampleCount
 	dts := fragmentInfo.dts
 
-	for _, sample := range *sampleInfo {
+	for i := 0; i < len(*sampleInfo); i++ {
 
 		// Update Composition time offset
 		if cttsSampleCount > 0 {
@@ -114,11 +117,11 @@ func registerCTSAndDTSSamples(stream StreamInfo, fragmentInfo FragmentInfo, samp
 			}
 		}
 
-		sample.hasDTS = emitter.Emit()
-		sample.hasCTS = sample.hasDTS
-		if sample.hasDTS {
-			sample.DTS = dts
-			sample.CTS = uint64(stream.ctts.Entries[cttsOffset].SampleOffset) + dts // - dConf.MediaTime
+		(*sampleInfo)[i].hasDTS = emitter.Emit()
+		(*sampleInfo)[i].hasCTS = (*sampleInfo)[i].hasDTS
+		if (*sampleInfo)[i].hasDTS {
+			(*sampleInfo)[i].DTS = dts
+			(*sampleInfo)[i].CTS = uint64(stream.ctts.Entries[cttsOffset].SampleOffset) + dts // - dConf.MediaTime
 			emitter.Reset()
 		}
 	}

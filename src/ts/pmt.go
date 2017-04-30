@@ -62,7 +62,6 @@ func (pmt PMT) ToBytes() (data Data) {
 func (section ProgramMapSection) ToBytes() (data Data) {
 	// In general, 13 bytes after sectionLength and 3 bytes before
 	sectionLength := section.GetSectionLength()
-
 	data = *NewData(section.Size())
 
 	data.PushObj(section.TableID, 8)
@@ -128,10 +127,6 @@ func (section ProgramMapSubSection) Size() (int) {
 }
 
 func (section ProgramMapSection) GetSectionLength() (int) {
-	if section.SectionLength != 0 {
-		return int(section.SectionLength)
-	}
-
 	// Compute the section Length
 	sectionLength := 13
 
@@ -163,7 +158,7 @@ func (descriptor Descriptor) Size() (int) {
 func NewPMT(PCR_PID uint16) (pmt *PMT) {
 	pmt = new(PMT)
 
-	pmt.PID = 4096
+	pmt.PID = 256
 	pmt.PayloadUnitStartIndicator = 1
 	pmt.AdaptationFieldControl = 1
 

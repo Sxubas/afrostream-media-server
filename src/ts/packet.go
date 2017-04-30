@@ -62,7 +62,7 @@ func (packet Packet) RestingSize() (size int) {
 
 	// Get adaptation field
 	if packet.HasAdaptationField() {
-		size += packet.Header.Size()
+		size += packet.AdaptationField.Size()
 	}
 
 	return
@@ -129,7 +129,7 @@ func (field AdaptationField) ToBytes() (data Data) {
 }
 
 func (field AdaptationField) Size() (int) {
-	return int(field.GetAdaptationLength()+ 1)
+	return int(field.GetAdaptationLength() + 1)
 }
 
 func (field AdaptationField) GetAdaptationLength() (byte) {
@@ -159,7 +159,6 @@ func (packet Packet) HasPayload() bool {
 func (field *AdaptationField) setPCR(PCR PCR) {
 	field.PCR = PCR
 	field.PCR_Flag = 1
-	field.AdaptationFieldLength += 6
 }
 
 func (packet *Packet) setAdaptationControl(adaptationFieldFlag bool, payloadFlag bool) {

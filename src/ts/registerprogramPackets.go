@@ -10,7 +10,7 @@ func RegisterProgramPackets(info StreamInfo, fragment *FragmentData) {
 	fragment.pmt.Section.Sections = make([]ProgramMapSubSection, 1)
 
 	// Register stream
-	fragment.pmt.Section.Sections[0].StreamType = byte(info.streamId)
+	fragment.pmt.Section.Sections[0].StreamType = byte(info.streamType)
 	fragment.pmt.Section.Sections[0].ElementaryPID = info.PID
 	fragment.pmt.Section.Sections[0].ESInfoLength = 0
 }

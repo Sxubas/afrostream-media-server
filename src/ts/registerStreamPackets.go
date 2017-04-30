@@ -45,7 +45,7 @@ func CreateElementaryStream(stream StreamInfo, sample SampleInfo) ([]byte) {
 
 	data := NewData(int(packetLength))
 	data.PushUInt(1, 24)
-	data.PushUInt(stream.streamId, 8)
+	data.PushUInt(sample.pesStream, 8)
 	data.PushUInt(sample.size, 16)
 	data.PushUInt(1, 1)
 	data.PushUInt(0, 7)
@@ -84,15 +84,10 @@ func pushTimestamp(timestamp uint64, data *Data) {
 func createPackets(info StreamInfo, sample SampleInfo, elementaryStreamSize uint32) (packets []PES){
 	// Create the first fragment with adaptation field
 	pid := info.PID
-	streamId := info.streamId
+	streamId := info.streamType
 
 	// Create the first packet
 	var firstPacket PES = *NewStartStream(pid, streamId)
-	if sample.HasAdaptationField() {
-		firstPacket.AdaptationFieldControl = 0x03
-	} else {
-		firstPacket = *NewStream(pid)
-	}
 
 	if sample.hasPCR {
 		pcr := PCR{}
@@ -118,11 +113,11 @@ func createPackets(info StreamInfo, sample SampleInfo, elementaryStreamSize uint
 	// Create packets
 	packets = make([]PES, neededPackets + 1)
 	packets[0] = firstPacket
-
 	for i := uint32(1); i < neededPackets + 1; i++ {
 		packets[i] = *NewStream(pid)
 		packets[i].setAdaptationControl(false, true)
 		packets[i].Payload.EmptySize = 184
+		packets[i].ContinuityCounter = byte(i % 16)
 	}
 
 	return

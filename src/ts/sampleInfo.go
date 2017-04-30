@@ -16,6 +16,8 @@ type SampleInfo struct {
 
 	size uint32
 
+	pesStream uint32
+
 	hasPCR 		bool
 	hasDTS		bool
 	hasCTS		bool

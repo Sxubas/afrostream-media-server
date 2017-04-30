@@ -41,16 +41,10 @@ func (pes PES) ToBytes() (data Data) {
 		data.PushBytes(pes.OptionalHeader)
 	}
 
-	// PES Section
-	finalLen := data.Offset
 	if pes.HasPayload() {
-		finalLen += len(pes.Payload.Data) * 8
-	}
-	if finalLen - len(data.Data) * 8 >= pes.Section.Size() * 8 {
-		data.PushBytes(pes.Section)
-	}
-
-	if pes.HasPayload() {
+		if pes.Payload.Size() > data.GetSpaceLeftInByte() {
+			panic("Not enough space to write payload")
+		}
 		// Push payload
  		data.PushBytes(pes.Payload)
 	}
@@ -92,9 +86,8 @@ func NewStartStream(PID uint16, streamId uint32) (pes *PES) {
 	pes.PID = PID
 
 	pes.AdaptationFieldControl = 0x03 // Adaptation field + payload
-	pes.AdaptationFieldLength = 2
 
-	pes.Section.PacketStartCodePrefix = 1
+	pes.PayloadUnitStartIndicator = 1
 	pes.Section.StreamId = streamId
 
 	return

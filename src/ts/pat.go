@@ -100,7 +100,7 @@ func NewPAT() (pat *PAT) {
 
 	// Set PMT PID
 	pat.Section.Sections[0].ProgramNumber = 1
-	pat.Section.Sections[0].ProgramMapID = 4096
+	pat.Section.Sections[0].ProgramMapID = 256
 
 	return
 }
@@ -127,10 +127,6 @@ func NewDebugPAT() (pat *PAT) {
 }
 
 func (section *ProgramAssociationSection) GetSectionLength() (uint16) {
-	if section.SectionLength != 0 {
-		return section.SectionLength
-	}
-
 	// Compute the section Length
-	return 8
+	return 9 + uint16(len(section.Sections) * 4)
 }

@@ -20,11 +20,11 @@ func AnalyseStream(dConf mp4.Conf, filename string) (streamInfo *StreamInfo){
 	streamInfo.compositionTimeOffset = streamInfo.isVideo() && dConf.Video.CttsBoxOffset != 0
 
 	if streamInfo.isVideo() {
-		streamInfo.PID = 257
-		streamInfo.streamId = 27//224
+		streamInfo.PID = 258
+		streamInfo.streamType = 27 //224
 	} else {
 		streamInfo.PID = 256
-		streamInfo.streamId = 15//127
+		streamInfo.streamType = 15 //127
 	}
 
 	return

@@ -13,8 +13,8 @@ type StreamInfo struct {
 	stts mp4.SttsBox
 
 	compositionTimeOffset bool
-	PID             uint16
-	streamId		uint32
+	PID                   uint16
+	streamType            uint32
 }
 
 func (info StreamInfo) isVideo() (bool) {
