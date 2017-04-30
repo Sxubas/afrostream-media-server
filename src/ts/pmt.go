@@ -93,9 +93,15 @@ func (section ProgramMapSection) ToBytes() (data Data) {
 	return
 }
 
-func (section ProgramMapSection) Size() (int) {
+func (section ProgramMapSection) Size() (size int) {
 	sectionLength := section.GetSectionLength()
-	return sectionLength + 3 + 4 // Bytes before section length + CRC32
+	size = sectionLength + 3  // Bytes before section length + CRC32
+
+	for i := 0; i < len(section.Sections); i++ {
+		size += section.Sections[i].Size()
+	}
+
+	return
 }
 
 func (section ProgramMapSubSection) ToBytes() (data Data) {
