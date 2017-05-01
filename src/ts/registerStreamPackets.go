@@ -22,54 +22,64 @@ func RegisterStreamPackets(streamInfo StreamInfo, samplesInfo []SampleInfo, frag
 
 func CreateElementaryStream(stream StreamInfo, sample SampleInfo) ([]byte) {
 
-	size := 24 + 8 + 16 // startCode + stream id + ps packet length
 
-	// Optional PES Header
-	size += 16 + 8 // Optional + PES Header length + PTS + DTS
+	sample.CTS = 7200
+	sample.DTS = 0
 
-	flag7 := uint32(0)
-
-	// If CTS needed
-	if sample.hasCTS {
-		size += 33
-		flag7 |= 1 << 7
-	}
-
-	// If DTS needed
-	if sample.hasDTS {
-		size += 33
-		flag7 |= 1 << 6
-	}
-
-	headerLength := RoundDivision32(uint32(size), 8)  // rounded to upper byte
-	packetLength := headerLength + sample.size
-
-	data := NewData(int(packetLength))
-	data.PushUInt(1, 24)
-	data.PushUInt(sample.pesStream, 8)
-	data.PushUInt(0, 16) //sample.size
-	data.PushUInt(1, 1)
-	data.PushUInt(0, 7)
-	data.PushUInt(flag7, 8)
-	data.PushUInt(headerLength - 8, 8)
+	sameTimeStamps := sample.DTS == sample.CTS
 
 	// If CTS needed
-	if sample.hasCTS {
-		pushTimestamp(sample.CTS, data)
+	headerLength := uint32(5)
+	flagPTSCode := uint32(0x02)
+	if !sameTimeStamps {
+		headerLength += 5
+		flagPTSCode = 0x03
 	}
 
-	// If DTS needed
-	if sample.hasDTS {
+	streamSize := 9 + headerLength + sample.size
+
+	data := NewData(int(streamSize))
+	data.PushUInt(1, 24) 			// Packet start id code
+	data.PushUInt(sample.pesStream, 8) 	// Pes stream
+	if stream.isVideo() {
+		data.PushUInt(0, 16) 		// Stream size
+	} else {
+		data.PushUInt(streamSize - 5, 16)  // Stream size
+	}
+
+
+	data.PushUInt(0x2, 2) 			// '10'
+	data.PushUInt(0, 2) 				// PES_Scrambling_control
+	data.PushUInt(0, 1) 				// PES_Priority
+	data.PushUInt(1, 1)				// data alignment indicator
+	data.PushUInt(0, 1)				// copyright
+	data.PushUInt(0, 1)				// original or copy
+
+	data.PushUInt(flagPTSCode, 2) 			// PTS and DTS flag
+
+	data.PushUInt(0, 1)				// ESCR flag
+	data.PushUInt(0, 1)				// ESCR Rate flag
+	data.PushUInt(0, 1)				// DSM_trick_mode_flag
+	data.PushUInt(0, 1)				// additional_copy_info_flag
+	data.PushUInt(0, 1)				// PES_CRC_flag
+	data.PushUInt(0, 1)				// PES_extension_flag
+	data.PushUInt(headerLength, 8)			// Header length
+
+	data.PushUInt(flagPTSCode,4) 			// PTS and DTS flag
+	pushTimestamp(sample.CTS, data)
+
+	if !sameTimeStamps {
+		data.PushUInt(1, 4)
 		pushTimestamp(sample.DTS, data)
 	}
-
-	// Fill to the end of header
-	data.FillTo(0xff, int(headerLength * 8))
 
 	// Fill with the sample data
 	stream.mdat.Offset = sample.mdatOffset
 	stream.mdat.Size = sample.mdatSize
+
 	data.PushAll(stream.mdat.ToBytes())
+	data.PrintHexFull()
+
 	return data.Data
 }
 
