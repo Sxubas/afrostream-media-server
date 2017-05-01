@@ -1,6 +1,5 @@
 package ts
 
-
 // Create Elementary stream packets containing our stream src
 func RegisterStreamPackets(streamInfo StreamInfo, samplesInfo []SampleInfo, fragment *FragmentData) {
 
@@ -62,6 +61,7 @@ func CreateElementaryStream(stream StreamInfo, sample SampleInfo) ([]byte) {
 	data.PushUInt(headerLength, 8)			// Header length
 
 	data.PushUInt(flagPTSCode,4) 			// PTS and DTS flag
+
 	pushTimestamp(sample.CTS, data)
 
 	if !sameTimeStamps {
@@ -73,7 +73,15 @@ func CreateElementaryStream(stream StreamInfo, sample SampleInfo) ([]byte) {
 	stream.mdat.Offset = sample.mdatOffset
 	stream.mdat.Size = sample.mdatSize
 
-	data.PushAll(stream.mdat.ToBytes())
+	elementaryStream := stream.mdat.ToBytes()
+	test := Data{}
+	test.Data = elementaryStream
+
+	if test.GetNalNumber() != 0 {
+		test.PrintSplittedNal()
+	}
+
+	data.PushAll(elementaryStream)
 
 	return data.Data
 }

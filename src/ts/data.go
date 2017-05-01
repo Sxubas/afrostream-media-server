@@ -286,10 +286,62 @@ func (data Data) PrintHexFull() {
 	size := uint32(len(data.Data))
 	for i < size {
 		fmt.Printf(" %04x:    ", uint16(i))
-		PrintLine("% 8x   ", i, size, data.Data)
+		PrintLine("% x   ", i, size, data.Data)
 		i += 16
 	}
 }
+
+
+func (data *Data) PrintSplittedNal() {
+	lastIndex := 0
+	nal := 0
+
+	for i := 0; i < len(data.Data) - 2; i++ {
+		if data.Data[i] == byte(0) {
+			if data.Data[i + 1] == byte(0) {
+				if data.Data[i + 2] == byte(1) {
+					temp := Data{}
+					temp.Data = data.Data[lastIndex:i]
+					temp.Offset = i - lastIndex
+					nal++
+					if i != 0 {
+						fmt.Printf("NAL #%d\n", i)
+						temp.PrintHexFull()
+						fmt.Printf("\n")
+					}
+					lastIndex = i
+				}
+			}
+		}
+	}
+
+	temp := Data{}
+	temp.Data = data.Data[lastIndex:len(data.Data)]
+
+	if lastIndex != 0 {
+		fmt.Printf("NAL #%d\n", nal)
+		temp.PrintHexFull()
+		fmt.Printf("\n")
+	}
+}
+
+func (data *Data) GetNalNumber() (nal int) {
+
+	nal = 0
+	for i := 0; i < len(data.Data) - 2; i++ {
+		if data.Data[i] == byte(0) {
+			if data.Data[i + 1] == byte(0) {
+				if data.Data[i + 2] == byte(1) {
+					nal++
+				}
+			}
+		}
+	}
+	return
+}
+
+
+
 
 func PrintLine(format string, start uint32, size uint32, bytes []byte) {
 	for w := 0; w < 2 && start < size; w++ {
