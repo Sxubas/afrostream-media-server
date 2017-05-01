@@ -22,10 +22,6 @@ func RegisterStreamPackets(streamInfo StreamInfo, samplesInfo []SampleInfo, frag
 
 func CreateElementaryStream(stream StreamInfo, sample SampleInfo) ([]byte) {
 
-
-	sample.CTS = 7200
-	sample.DTS = 0
-
 	sameTimeStamps := sample.DTS == sample.CTS
 
 	// If CTS needed
@@ -78,7 +74,6 @@ func CreateElementaryStream(stream StreamInfo, sample SampleInfo) ([]byte) {
 	stream.mdat.Size = sample.mdatSize
 
 	data.PushAll(stream.mdat.ToBytes())
-	data.PrintHexFull()
 
 	return data.Data
 }

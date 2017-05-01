@@ -5,10 +5,6 @@ type SampleInfo struct {
 	CTS uint64
 	DTS uint64
 
-	registerPCR bool
-	registerCTS bool
-	registerDTS bool
-
 	isIFrameType bool
 
 	mdatOffset int64
@@ -23,19 +19,11 @@ type SampleInfo struct {
 	hasCTS		bool
 }
 
-func (info SampleInfo) IsRegisteringPCR() (bool) {
-	return info.registerPCR
-}
-func (info SampleInfo) IsRegisteringDTS() (bool) {
-	return info.registerDTS
-}
-func (info SampleInfo) IsRegisteringCTS() (bool) {
-	return info.registerCTS
-}
+
 func (info SampleInfo) IsIframe() (bool) {
 	return info.isIFrameType
 }
 
 func (info SampleInfo) HasAdaptationField() (bool) {
-	return info.IsRegisteringPCR()
+	return info.hasPCR
 }
