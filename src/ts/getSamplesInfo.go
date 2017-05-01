@@ -64,7 +64,7 @@ func registerISamples(info FragmentInfo, sampleInfo *[]SampleInfo) {
 func registerPCRSamples(stream StreamInfo, fragmentInfo FragmentInfo, sampleInfo *[]SampleInfo) {
 
 	pcrEmitter := IEmitter{}
-	pcrEmitter.Min_emit = 1
+	pcrEmitter.Min_emit = 0
 
 	for i := 0; i < len(*sampleInfo); i++ {
 

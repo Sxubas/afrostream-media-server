@@ -1,7 +1,5 @@
 package ts
 
-import "fmt"
-
 func FinaliseFragment(data *FragmentData) (bytes []byte) {
 
 	bytes = make([]byte, 0)
@@ -32,7 +30,8 @@ func FinaliseFragment(data *FragmentData) (bytes []byte) {
 		}
 
 		//fmt.Println("PES")
-		fmt.Println(i)
+		//fmt.Println(i)
+		packet.ContinuityCounter = byte(i % 16)
 		bytes = append(bytes, packet.ToBytes().Data...)
 	}
 
