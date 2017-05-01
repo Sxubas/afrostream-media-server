@@ -276,7 +276,7 @@ func (data Data) PrintHex() {
 	var i uint32 = 0
 	size := uint32(len(data.Data))
 	for i < size {
-		PrintLine("% 8x   ", i, size, data.Data)
+		PrintLine("% x   ", i, size, data.Data)
 		i += 16
 	}
 }
