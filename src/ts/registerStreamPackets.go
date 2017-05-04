@@ -22,17 +22,21 @@ func RegisterStreamPackets(streamInfo StreamInfo, samplesInfo []SampleInfo, frag
 
 func CreateElementaryStreamSrc(stream StreamInfo, sample SampleInfo) ([]byte) {
 
-	// Compute stream size adding start code prefix between NAL Unit
-	streamSize := int(sample.size) + len(sample.NALUnits)
+	sameTimeStamps := sample.DTS == sample.CTS
 
 	// Create data holding the elementary stream
+	streamSize, headerLength := getStreamSizeAndHeaderLength(stream, sample, sameTimeStamps)
 	data := NewData(streamSize)
 
 	// For each NAL Units
-	for _, unit := range sample.NALUnits {
+	for i, unit := range sample.NALUnits {
 
-		// Packet start id code
-		data.PushUInt(1, 24)
+		if i == 0 {
+			pushSampleHeader(stream, sample, sameTimeStamps, streamSize, headerLength, data)
+		} else {
+			// Packet start id code
+			data.PushUInt(1, 24)
+		}
 
 		// Add the corresponding data
 		stream.mdat.Offset = unit.mdatOffset
@@ -43,7 +47,67 @@ func CreateElementaryStreamSrc(stream StreamInfo, sample SampleInfo) ([]byte) {
 	return data.Data
 }
 
-func CreateElementaryStream(stream StreamInfo, sample SampleInfo) ([]byte) {
+func getStreamSizeAndHeaderLength(stream StreamInfo, sample SampleInfo, sameTimeStamps bool) (streamSize int, headerLength int) {
+	headerLength = 5
+	if !sameTimeStamps {
+		headerLength += 5
+	}
+
+	// Stream size with header
+	streamSize = 9 + headerLength + int(sample.size)
+
+	// Replace start code prefix by NALLength size
+	totalNALLengthSize := uint32(len(sample.NALUnits)) * stream.nalLengthSize
+	startCodePrefixSize := uint32(len(sample.NALUnits)) * 3
+	streamSize += int(startCodePrefixSize) - int(totalNALLengthSize)
+
+	return
+}
+
+func pushSampleHeader(stream StreamInfo, sample SampleInfo, sameTimeStamps bool, streamSize int, headerLength int, data *Data) {
+
+	// If CTS needed
+	flagPTSCode := uint32(0x02)
+	if !sameTimeStamps {
+		flagPTSCode = 0x03
+	}
+
+	data.PushUInt(1, 24) 			// Packet start id code
+	data.PushUInt(sample.pesStream, 8) 	// Pes stream
+	if stream.isVideo() {
+		data.PushUInt(0, 16) 		// Stream size
+	} else {
+		data.PushUInt(uint32(streamSize - 5), 16)  // Stream size
+	}
+
+	data.PushUInt(0x2, 2) 			// '10'
+	data.PushUInt(0, 2) 				// PES_Scrambling_control
+	data.PushUInt(0, 1) 				// PES_Priority
+	data.PushUInt(1, 1)				// data alignment indicator
+	data.PushUInt(0, 1)				// copyright
+	data.PushUInt(0, 1)				// original or copy
+
+	data.PushUInt(flagPTSCode, 2) 			// PTS and DTS flag
+
+	data.PushUInt(0, 1)				// ESCR flag
+	data.PushUInt(0, 1)				// ESCR Rate flag
+	data.PushUInt(0, 1)				// DSM_trick_mode_flag
+	data.PushUInt(0, 1)				// additional_copy_info_flag
+	data.PushUInt(0, 1)				// PES_CRC_flag
+	data.PushUInt(0, 1)				// PES_extension_flag
+	data.PushUInt(uint32(headerLength), 8)	// Header length
+
+	data.PushUInt(flagPTSCode,4) 			// PTS and DTS flag
+
+	pushTimestamp(sample.CTS, data)
+
+	if !sameTimeStamps {
+		data.PushUInt(1, 4)
+		pushTimestamp(sample.DTS, data)
+	}
+}
+
+func CreateSampleHeader(stream StreamInfo, sample SampleInfo) (data *Data) {
 
 	sameTimeStamps := sample.DTS == sample.CTS
 
@@ -57,7 +121,7 @@ func CreateElementaryStream(stream StreamInfo, sample SampleInfo) ([]byte) {
 
 	streamSize := 9 + headerLength + sample.size
 
-	data := NewData(int(streamSize))
+	data = NewData(int(streamSize))
 	data.PushUInt(1, 24) 			// Packet start id code
 	data.PushUInt(sample.pesStream, 8) 	// Pes stream
 	if stream.isVideo() {
@@ -93,21 +157,7 @@ func CreateElementaryStream(stream StreamInfo, sample SampleInfo) ([]byte) {
 		pushTimestamp(sample.DTS, data)
 	}
 
-	// Fill with the sample data
-	stream.mdat.Offset = sample.mdatOffset
-	stream.mdat.Size = sample.mdatSize
-
-	elementaryStream := stream.mdat.ToBytes()
-	test := Data{}
-	test.Data = elementaryStream
-
-	if test.GetNalNumber() != 0 {
-		test.PrintSplittedNal()
-	}
-
-	data.PushAll(elementaryStream)
-
-	return data.Data
+	return data
 }
 
 func pushTimestamp(timestamp uint64, data *Data) {
