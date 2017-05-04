@@ -14,23 +14,15 @@ func AnalyseStream(dConf mp4.Conf, filename string) (streamInfo *StreamInfo){
 	streamInfo.filename = filename
 
 	// Retrieve needed boxes
-	LoadBoxes(streamInfo)
+	loadBoxes(streamInfo)
 
-	// Check if it has composition offset (PTS/DTS)
-	streamInfo.compositionTimeOffset = streamInfo.isVideo() && dConf.Video.CttsBoxOffset != 0
-
-	if streamInfo.isVideo() {
-		streamInfo.PID = 258
-		streamInfo.streamType = 27 //224
-	} else {
-		streamInfo.PID = 256
-		streamInfo.streamType = 15 //127
-	}
+	// Get the information from the boxes
+	registerInformation(dConf, streamInfo)
 
 	return
 }
 
-func LoadBoxes(info *StreamInfo) {
+func loadBoxes(info *StreamInfo) {
 
 	// Create the container to load mp4File content
 	mp4File := mp4.ReadMainBoxes(info.filename, info.Conf)
@@ -57,4 +49,30 @@ func LoadBoxes(info *StreamInfo) {
 	// Get size information
 	// STSZ
 	info.stsz = mp4File["moov.trak.mdia.minf.stbl.stsz"][0].(mp4.StszBox)
+
+	// Get nal information (And SPS/PPS)
+	// Avc box can be placed at two locations
+	avcCBox := mp4File["moov.trak.mdia.minf.stbl.stsd.avc1.avcC"]
+	if avcCBox == nil {
+		avcCBox = mp4File["moov.trak.mdia.minf.stbl.stsd.encv.avcC"]
+	}
+	info.avcC = avcCBox[0].(mp4.AvcCBox)
+}
+
+func registerInformation(dConf mp4.Conf, streamInfo *StreamInfo) {
+	// Check if it has composition offset (PTS/DTS)
+	streamInfo.compositionTimeOffset = false //streamInfo.isVideo() && dConf.Video.CttsBoxOffset != 0
+
+	// Register PID for audio and video streams
+	if streamInfo.isVideo() {
+		streamInfo.PID = 258
+		streamInfo.streamType = 27 //224
+	} else {
+		streamInfo.PID = 256
+		streamInfo.streamType = 15 //127
+	}
+
+	// Retrieve information for nal segmentation
+	// Use the avcC box: NalUnitLengthSize minus one + 1
+	streamInfo.nalLengthSize = uint32(streamInfo.avcC.NalUnitSize & 0x03 + 1)
 }

@@ -1,5 +1,6 @@
 package ts
 
+// Hold information on Time, data location and type
 type SampleInfo struct {
 	PCR uint64
 	CTS uint64
@@ -17,6 +18,14 @@ type SampleInfo struct {
 	hasPCR 		bool
 	hasDTS		bool
 	hasCTS		bool
+
+	NALUnits []NALUnit
+}
+
+// Hold NAL unit location in the mdat
+type NALUnit struct {
+	mdatOffset int64
+	mdatSize   uint32
 }
 
 

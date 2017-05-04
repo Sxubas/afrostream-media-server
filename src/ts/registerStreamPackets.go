@@ -6,7 +6,7 @@ func RegisterStreamPackets(streamInfo StreamInfo, samplesInfo []SampleInfo, frag
 	// For each sample
 	for _, sample := range samplesInfo {
 		// Create the elementary stream
-		elementaryStream := CreateElementaryStream(streamInfo, sample)
+		elementaryStream := CreateElementaryStreamSrc(streamInfo, sample)
 
 		// Create packets stream
 		pes := createPackets(streamInfo, sample, uint32(len(elementaryStream)))
@@ -17,6 +17,30 @@ func RegisterStreamPackets(streamInfo StreamInfo, samplesInfo []SampleInfo, frag
 		// Append fragment to PES
 		fragment.pes = append(fragment.pes, pes...)
 	}
+}
+
+
+func CreateElementaryStreamSrc(stream StreamInfo, sample SampleInfo) ([]byte) {
+
+	// Compute stream size adding start code prefix between NAL Unit
+	streamSize := int(sample.size) + len(sample.NALUnits)
+
+	// Create data holding the elementary stream
+	data := NewData(streamSize)
+
+	// For each NAL Units
+	for _, unit := range sample.NALUnits {
+
+		// Packet start id code
+		data.PushUInt(1, 24)
+
+		// Add the corresponding data
+		stream.mdat.Offset = unit.mdatOffset
+		stream.mdat.Size = unit.mdatSize
+		data.PushAll(stream.mdat.ToBytes())
+	}
+
+	return data.Data
 }
 
 func CreateElementaryStream(stream StreamInfo, sample SampleInfo) ([]byte) {

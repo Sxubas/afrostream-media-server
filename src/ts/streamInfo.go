@@ -11,10 +11,14 @@ type StreamInfo struct {
 	stss mp4.StssBox
 	stsz mp4.StszBox
 	stts mp4.SttsBox
+	avcC mp4.AvcCBox
 
 	compositionTimeOffset bool
 	PID                   uint16
 	streamType            uint32
+
+	// Number of bytes describing the nal length (e.g. 4)
+	nalLengthSize		  uint32
 }
 
 func (info StreamInfo) isVideo() (bool) {

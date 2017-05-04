@@ -1,5 +1,9 @@
 package ts
 
+import (
+	"encoding/binary"
+)
+
 
 // Get information on all samples in the fragment
 func GetSamplesInfo(stream StreamInfo, fragmentInfo FragmentInfo) (sampleInfo []SampleInfo) {
@@ -8,6 +12,9 @@ func GetSamplesInfo(stream StreamInfo, fragmentInfo FragmentInfo) (sampleInfo []
 
 	// Get size And offset of the sample in MDat
 	registerSamplesSizes(stream, fragmentInfo, &sampleInfo)
+
+	// Retrieve all NAL unit length in this sample
+	registerNalUnits(stream, &sampleInfo)
 
 	if stream.isVideo() {
 
@@ -19,10 +26,43 @@ func GetSamplesInfo(stream StreamInfo, fragmentInfo FragmentInfo) (sampleInfo []
 
 		// Retrieve the compositionTimeOffset and decodingTimeOffset
 		registerCTSAndDTSSamples(stream, fragmentInfo, &sampleInfo)
-
 	}
 
 	return
+}
+
+func registerNalUnits(info StreamInfo, sampleInfo *[]SampleInfo) {
+
+	// Set the size of mdat to read NAL unit length only
+	info.mdat.Size = info.nalLengthSize
+
+	for i := 0; i < len(*sampleInfo); i++ {
+		sample := &(*sampleInfo)[i]
+
+		// Get the start and end offset in the mdat
+		offset := sample.mdatOffset
+		endOffset := sample.mdatOffset + int64(sample.mdatSize - info.nalLengthSize)
+
+		// Parse all possibles NAL unit
+		for offset < endOffset {
+
+			// Create the NAL Unit to keep information
+			nalUnit := NALUnit{}
+
+			// Read the bytes representing the NAL unit length
+			info.mdat.Offset = offset
+
+			// Set start and size of the NAL
+			// start = Offset + NAL length size
+			nalUnit.mdatOffset = offset + int64(info.nalLengthSize)
+			bytes := info.mdat.ToBytes()
+			nalUnit.mdatSize = binary.BigEndian.Uint32(bytes)
+
+			// Add Unit to other saved NAL Units
+			sample.NALUnits = append(sample.NALUnits, nalUnit)
+			offset += int64(nalUnit.mdatSize) + 4
+		}
+	}
 }
 
 func registerSamplesSizes(stream StreamInfo, info FragmentInfo, sampleInfo *[]SampleInfo) {
@@ -31,7 +71,7 @@ func registerSamplesSizes(stream StreamInfo, info FragmentInfo, sampleInfo *[]Sa
 
 	if stream.stsz.SampleSize == 0 {
 		for i := 0; i < len(*sampleInfo); i++ {
-			(*sampleInfo)[i].pesStream = 224
+			(*sampleInfo)[i].pesStream = 101
 
 			(*sampleInfo)[i].mdatSize = stream.stsz.EntrySize[uint32(i) + info.sampleStart]
 			(*sampleInfo)[i].size = (*sampleInfo)[i].mdatSize
@@ -40,7 +80,7 @@ func registerSamplesSizes(stream StreamInfo, info FragmentInfo, sampleInfo *[]Sa
 		}
 	} else {
 		for i := 0; i < len(*sampleInfo); i++ {
-			(*sampleInfo)[i].pesStream = 224
+			(*sampleInfo)[i].pesStream = 101
 
 			(*sampleInfo)[i].mdatSize = stream.stsz.SampleSize
 			(*sampleInfo)[i].size = (*sampleInfo)[i].mdatSize

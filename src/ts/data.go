@@ -359,3 +359,10 @@ func (data *Data) GenerateCRC32ToOffset() uint32 {
 func (data *Data) GenerateCRC32() uint32 {
 	return crc.ComputeCRC32MPEG(data.Data)
 }
+
+func DataB(bytes []byte) (data *Data){
+	data = new(Data)
+	data.Data = bytes
+	data.Offset = len(bytes)
+	return
+}
