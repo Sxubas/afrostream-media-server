@@ -12,9 +12,6 @@ type SampleInfo struct {
 	mdatSize   uint32
 
 	size uint32
-	hasPCR 		bool
-	hasDTS		bool
-	hasCTS		bool
 
 	NALUnits []NALUnit
 }
@@ -28,8 +25,4 @@ type NALUnit struct {
 
 func (info SampleInfo) IsIframe() (bool) {
 	return info.isIFrameType
-}
-
-func (info SampleInfo) HasAdaptationField() (bool) {
-	return info.hasPCR
 }

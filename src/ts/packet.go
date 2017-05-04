@@ -55,7 +55,7 @@ func (packet Packet) ToBytes() (data Data) {
 	return
 }
 
-func (packet Packet) RestingSize() (size int) {
+func (packet Packet) HeaderAndAdaptationSize() (size int) {
 
 	// Get header
 	size = packet.Header.Size()
@@ -122,9 +122,7 @@ func (field AdaptationField) ToBytes() (data Data) {
 	}
 
 	// Fill with stuffing bytes
-	// Don't forget the byte counting adaptationLength
-	result := int(adaptationLength + 1) * 8
-	data.FillTo(0xff, result)
+	data.FillRemaining(0xff)
 	return
 }
 
