@@ -17,7 +17,7 @@ func AnalyseStream(dConf mp4.Conf, filename string) (streamInfo *StreamInfo){
 	loadBoxes(streamInfo)
 
 	// Get the information from the boxes
-	registerInformation(dConf, streamInfo)
+	registerInformation(streamInfo)
 
 	return
 }
@@ -59,7 +59,10 @@ func loadBoxes(info *StreamInfo) {
 	info.avcC = avcCBox[0].(mp4.AvcCBox)
 }
 
-func registerInformation(dConf mp4.Conf, streamInfo *StreamInfo) {
+func registerInformation(streamInfo *StreamInfo) {
+	// Get sample delta to compute PCR for each Sample
+	streamInfo.SampleDelta = streamInfo.stts.Entries[0].SampleDelta
+
 	// Check if it has composition offset (PTS/DTS)
 	streamInfo.compositionTimeOffset = streamInfo.isVideo() && streamInfo.ctts.Offset != 0
 
