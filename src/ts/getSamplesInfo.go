@@ -100,7 +100,7 @@ func registerPCRSamples(stream StreamInfo, fragmentInfo FragmentInfo, sampleInfo
 
 	for i := 0; i < len(*sampleInfo); i++ {
 
-		(*sampleInfo)[i].PCR = uint64((fragmentInfo.sampleStart + uint32(i))* stream.SampleDelta)
+		(*sampleInfo)[i].PCR = (uint64(fragmentInfo.sampleStart) + uint64(i)) * uint64(stream.SampleDelta)
 	}
 }
 

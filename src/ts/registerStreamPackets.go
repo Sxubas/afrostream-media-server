@@ -1,10 +1,12 @@
 package ts
 
+import "fmt"
+
 // Create Elementary stream packets containing our stream src
 func RegisterStreamPackets(streamInfo StreamInfo, samplesInfo []SampleInfo, fragment *FragmentData) {
 
 	// For each sample
-	for _, sample := range samplesInfo {
+	for i, sample := range samplesInfo {
 		// Create the elementary stream
 		elementaryStream := CreateElementaryStreamSrc(streamInfo, sample)
 
@@ -217,7 +219,7 @@ func getStuffingCase(restingSize uint32, elementaryStreamSize uint32) (stuffingC
 		// Get stream size in the last packet
 		lastPacketPESSize = (elementaryStreamSize - restingSize) % 184
 
-		sizeToStuff = 184 - lastPacketPESSize
+		sizeToStuff = (184 - lastPacketPESSize) % 184
 		// If there are still something to write
 		if sizeToStuff != 0 {
 			stuffingCase = 1
@@ -261,8 +263,8 @@ func stuffLastPackets(stuffingCase int, packets *[]PES, sizeToStuff uint32, last
 
 		// Add adaptation field for last two packets
 		secLastPacket.setAdaptationControl(true, true)
-		secLastPacket.EmptySize = lastPacket.EmptySize - uint32(AdaptationField{}.Size())
-		restingPES := lastPacketPESSize - lastPacket.EmptySize
+		secLastPacket.EmptySize = secLastPacket.EmptySize - uint32(AdaptationField{}.Size())
+		restingPES := lastPacketPESSize - secLastPacket.EmptySize
 
 		lastPacket.setAdaptationControl(true, true)
 		lastPacket.setTotalAdaptationSize(byte(lastPacket.EmptySize - restingPES))
@@ -293,5 +295,4 @@ func fillPackets(packets *[]PES, elementaryStream []byte) {
 		offset += extractedSize
 		packetId++
 	}
-
 }
