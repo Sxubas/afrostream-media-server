@@ -167,12 +167,25 @@ func pushTimestamp(timestamp uint64, data *Data) {
 }
 
 func createPackets(info StreamInfo, sample SampleInfo, elementaryStreamSize uint32) (packets []PES){
-	// Create the first fragment with adaptation field
-	pid := info.PID
-	streamId := info.streamType
 
 	// Create the first packet
-	var firstPacket PES = *NewStartStream(pid, streamId)
+	firstPacket := createFirstPacket(info, sample)
+
+	// Get stuffing information and number of needed packets
+	stuffingCase, sizeToStuff, lastPacketPESSize, neededPackets := getStuffingCase(firstPacket.EmptySize, elementaryStreamSize)
+
+	// Create packets
+	packets = make([]PES, neededPackets + 1)
+	initPacketList(neededPackets, firstPacket, info.PID, &packets)
+
+	// Stuff the last packet adaptationfield
+	stuffLastPackets(stuffingCase, &packets, sizeToStuff, lastPacketPESSize)
+
+	return
+}
+
+func createFirstPacket(info StreamInfo, sample SampleInfo) (firstPacket *PES){
+	firstPacket = NewStartStream(info.PID, info.streamType)
 
 	pcr := PCR{}
 	pcr.BaseMediaDecodeTime = sample.PCR
@@ -182,19 +195,15 @@ func createPackets(info StreamInfo, sample SampleInfo, elementaryStreamSize uint
 	if sample.IsIframe() {
 		firstPacket.RandomAccessIndicator = 1
 	}
+
 	firstPacket.setAdaptationControl(true, true)
 
-	// Compute the number of fragments needed
-	restingSize := uint32(188 - firstPacket.HeaderAndAdaptationSize())
-	firstPacket.Payload.EmptySize = restingSize
+	firstPacket.Payload.EmptySize = uint32(188 - firstPacket.HeaderAndAdaptationSize())
 
-	neededPackets := uint32(0)
+	return
+}
 
-	var sizeToStuff uint32
-	var lastPacketPESSize uint32
-	field := AdaptationField{}
-
-	stuffingCase := 0
+func getStuffingCase(restingSize uint32, elementaryStreamSize uint32) (stuffingCase int, sizeToStuff uint32, lastPacketPESSize uint32, neededPackets uint32){
 
 	// If there are only one packet needed
 	if restingSize >= elementaryStreamSize {
@@ -213,45 +222,53 @@ func createPackets(info StreamInfo, sample SampleInfo, elementaryStreamSize uint
 		if sizeToStuff != 0 {
 			stuffingCase = 1
 			// If there is enough space to write payload and adaptation field in this last packet
-			if sizeToStuff < uint32(field.Size()) {
+			if sizeToStuff < uint32(AdaptationField{}.Size()) {
 				// We need another packet
 				neededPackets++
 				stuffingCase = 2
 			}
 		}
 	}
+	return
+}
 
-	// Create packets
-	packets = make([]PES, neededPackets + 1)
-	packets[0] = firstPacket
+func initPacketList(neededPackets uint32, firstPacket *PES, pid uint16, packets *[]PES) {
+
+	(*packets)[0] = *firstPacket
 	for i := uint32(1); i < neededPackets + 1; i++ {
-		packets[i] = *NewStream(pid)
-		packets[i].setAdaptationControl(false, true)
-		packets[i].Payload.EmptySize = 184
+		(*packets)[i] = *NewStream(pid)
+		(*packets)[i].setAdaptationControl(false, true)
+		(*packets)[i].Payload.EmptySize = 184
 	}
+	return
+}
+
+func stuffLastPackets(stuffingCase int, packets *[]PES, sizeToStuff uint32, lastPacketPESSize uint32) {
 
 	// If we have not enough space in the last packet with the adpation field
 	switch stuffingCase {
 	case 1:
+		lastPacket := &(*packets)[len(*packets) - 1]
+
 		// Fill last packet adaptation field
-		packets[len(packets) - 1].setAdaptationControl(true, true)
-		packets[len(packets) - 1].setTotalAdaptationSize(byte(sizeToStuff))
-		packets[len(packets) - 1].Payload.EmptySize = lastPacketPESSize
+		lastPacket.setAdaptationControl(true, true)
+		lastPacket.setTotalAdaptationSize(byte(sizeToStuff))
+		lastPacket.Payload.EmptySize = lastPacketPESSize
 		break;
 	case 2:
-		// Add adaptation field for last two packets
-		packets[len(packets) - 2].setAdaptationControl(true, true)
-		packets[len(packets) - 2].EmptySize = packets[len(packets) - 2].EmptySize - uint32(field.Size())
-		restingPES := lastPacketPESSize - packets[len(packets) - 2].EmptySize
+		secLastPacket := &(*packets)[len(*packets) - 2]
+		lastPacket := &(*packets)[len(*packets) - 1]
 
-		packets[len(packets) - 1].setAdaptationControl(true, true)
-		packets[len(packets) - 1].setTotalAdaptationSize(byte(packets[len(packets) - 1].EmptySize - restingPES))
-		packets[len(packets) - 1].Payload.EmptySize = restingPES
+		// Add adaptation field for last two packets
+		secLastPacket.setAdaptationControl(true, true)
+		secLastPacket.EmptySize = lastPacket.EmptySize - uint32(AdaptationField{}.Size())
+		restingPES := lastPacketPESSize - lastPacket.EmptySize
+
+		lastPacket.setAdaptationControl(true, true)
+		lastPacket.setTotalAdaptationSize(byte(lastPacket.EmptySize - restingPES))
+		lastPacket.Payload.EmptySize = restingPES
 		break;
 	}
-
-
-	return
 }
 
 func fillPackets(packets *[]PES, elementaryStream []byte) {
