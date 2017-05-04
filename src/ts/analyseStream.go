@@ -61,7 +61,7 @@ func loadBoxes(info *StreamInfo) {
 
 func registerInformation(dConf mp4.Conf, streamInfo *StreamInfo) {
 	// Check if it has composition offset (PTS/DTS)
-	streamInfo.compositionTimeOffset = false //streamInfo.isVideo() && dConf.Video.CttsBoxOffset != 0
+	streamInfo.compositionTimeOffset = streamInfo.isVideo() && streamInfo.ctts.Offset != 0
 
 	// Register PID for audio and video streams
 	if streamInfo.isVideo() {

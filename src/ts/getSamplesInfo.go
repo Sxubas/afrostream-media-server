@@ -71,8 +71,6 @@ func registerSamplesSizes(stream StreamInfo, info FragmentInfo, sampleInfo *[]Sa
 
 	if stream.stsz.SampleSize == 0 {
 		for i := 0; i < len(*sampleInfo); i++ {
-			(*sampleInfo)[i].pesStream = 101
-
 			(*sampleInfo)[i].mdatSize = stream.stsz.EntrySize[uint32(i) + info.sampleStart]
 			(*sampleInfo)[i].size = (*sampleInfo)[i].mdatSize
 			(*sampleInfo)[i].mdatOffset = offset
@@ -80,8 +78,6 @@ func registerSamplesSizes(stream StreamInfo, info FragmentInfo, sampleInfo *[]Sa
 		}
 	} else {
 		for i := 0; i < len(*sampleInfo); i++ {
-			(*sampleInfo)[i].pesStream = 101
-
 			(*sampleInfo)[i].mdatSize = stream.stsz.SampleSize
 			(*sampleInfo)[i].size = (*sampleInfo)[i].mdatSize
 			(*sampleInfo)[i].mdatOffset = offset
@@ -117,6 +113,10 @@ func registerPCRSamples(stream StreamInfo, fragmentInfo FragmentInfo, sampleInfo
 
 func registerCTSAndDTSSamples(stream StreamInfo, fragmentInfo FragmentInfo, sampleInfo *[]SampleInfo) {
 
+	if len(*sampleInfo) == 0 {
+		return
+	}
+
 	emitter := IEmitter{}
 	emitter.Min_emit = 0
 
@@ -126,7 +126,16 @@ func registerCTSAndDTSSamples(stream StreamInfo, fragmentInfo FragmentInfo, samp
 	sttsSampleCount := fragmentInfo.sttsSampleCount
 	dts := fragmentInfo.dts
 
-	for i := 0; i < len(*sampleInfo); i++ {
+	// Register first sample
+	sample := &(*sampleInfo)[0]
+	sample.DTS = dts
+	if stream.compositionTimeOffset {
+		sample.CTS = uint64(stream.ctts.Entries[cttsOffset].SampleOffset) + dts // - dConf.MediaTime
+	} else {
+		sample.CTS = dts
+	}
+
+	for i := 1; i < len(*sampleInfo); i++ {
 
 		// Update Composition time offset
 		if stream.compositionTimeOffset {
@@ -143,7 +152,6 @@ func registerCTSAndDTSSamples(stream StreamInfo, fragmentInfo FragmentInfo, samp
 			}
 		}
 
-		dts += uint64(stream.stts.Entries[sttsOffset].SampleDelta)
 		// Update Decoding time offset
 		if sttsSampleCount > 0 {
 			sttsSampleCount--
@@ -156,19 +164,15 @@ func registerCTSAndDTSSamples(stream StreamInfo, fragmentInfo FragmentInfo, samp
 				sttsOffset++
 			}
 		}
+		dts += uint64(stream.stts.Entries[sttsOffset].SampleDelta)
 
-		(*sampleInfo)[i].hasDTS = emitter.Emit()
-		(*sampleInfo)[i].hasCTS = (*sampleInfo)[i].hasDTS
-		if (*sampleInfo)[i].hasDTS {
-			(*sampleInfo)[i].DTS = dts
-			if stream.compositionTimeOffset {
-				(*sampleInfo)[i].CTS = uint64(stream.ctts.Entries[cttsOffset].SampleOffset) + dts // - dConf.MediaTime
-			} else {
-				(*sampleInfo)[i].CTS = dts
-			}
-			emitter.Reset()
+		// Register DTS and CTS
+		sample = &(*sampleInfo)[i]
+		sample.DTS = dts
+		if stream.compositionTimeOffset {
+			sample.CTS = uint64(stream.ctts.Entries[cttsOffset].SampleOffset) + dts // - dConf.MediaTime
+		} else {
+			sample.CTS = dts
 		}
-
-
 	}
 }

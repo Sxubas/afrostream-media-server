@@ -28,15 +28,12 @@ func CreateElementaryStreamSrc(stream StreamInfo, sample SampleInfo) ([]byte) {
 	streamSize, headerLength := getStreamSizeAndHeaderLength(stream, sample, sameTimeStamps)
 	data := NewData(streamSize)
 
+	pushSampleHeader(stream, sample, sameTimeStamps, streamSize, headerLength, data)
 	// For each NAL Units
-	for i, unit := range sample.NALUnits {
+	for _, unit := range sample.NALUnits {
 
-		if i == 0 {
-			pushSampleHeader(stream, sample, sameTimeStamps, streamSize, headerLength, data)
-		} else {
-			// Packet start id code
-			data.PushUInt(1, 24)
-		}
+		// Packet start id code
+		data.PushUInt(1, 24)
 
 		// Add the corresponding data
 		stream.mdat.Offset = unit.mdatOffset
@@ -56,7 +53,7 @@ func getStreamSizeAndHeaderLength(stream StreamInfo, sample SampleInfo, sameTime
 	// Stream size with header
 	streamSize = 9 + headerLength + int(sample.size)
 
-	// Replace start code prefix by NALLength size
+	// Replace start code prefix with NALLength size
 	totalNALLengthSize := uint32(len(sample.NALUnits)) * stream.nalLengthSize
 	startCodePrefixSize := uint32(len(sample.NALUnits)) * 3
 	streamSize += int(startCodePrefixSize) - int(totalNALLengthSize)
@@ -73,7 +70,7 @@ func pushSampleHeader(stream StreamInfo, sample SampleInfo, sameTimeStamps bool,
 	}
 
 	data.PushUInt(1, 24) 			// Packet start id code
-	data.PushUInt(sample.pesStream, 8) 	// Pes stream
+	data.PushUInt(224, 8) 			// Pes stream
 	if stream.isVideo() {
 		data.PushUInt(0, 16) 		// Stream size
 	} else {
@@ -123,7 +120,7 @@ func CreateSampleHeader(stream StreamInfo, sample SampleInfo) (data *Data) {
 
 	data = NewData(int(streamSize))
 	data.PushUInt(1, 24) 			// Packet start id code
-	data.PushUInt(sample.pesStream, 8) 	// Pes stream
+	data.PushUInt(224, 8) 			// Pes stream
 	if stream.isVideo() {
 		data.PushUInt(0, 16) 		// Stream size
 	} else {
