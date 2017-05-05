@@ -1,14 +1,12 @@
 package ts
 
-import "fmt"
-
 // Create Elementary stream packets containing our stream src
 func RegisterStreamPackets(streamInfo StreamInfo, samplesInfo []SampleInfo, fragment *FragmentData) {
 
 	// For each sample
-	for i, sample := range samplesInfo {
+	for sampleIndex, sample := range samplesInfo {
 		// Create the elementary stream
-		elementaryStream := CreateElementaryStreamSrc(streamInfo, sample)
+		elementaryStream := CreateElementaryStreamSrc(sampleIndex == 0, streamInfo, sample)
 
 		// Create packets stream
 		pes := createPackets(streamInfo, sample, uint32(len(elementaryStream)))
@@ -22,15 +20,24 @@ func RegisterStreamPackets(streamInfo StreamInfo, samplesInfo []SampleInfo, frag
 }
 
 
-func CreateElementaryStreamSrc(stream StreamInfo, sample SampleInfo) ([]byte) {
+func CreateElementaryStreamSrc(isFirst bool, stream StreamInfo, sample SampleInfo) ([]byte) {
 
+	var data *Data
 	sameTimeStamps := sample.DTS == sample.CTS
 
 	// Create data holding the elementary stream
-	streamSize, headerLength := getStreamSizeAndHeaderLength(stream, sample, sameTimeStamps)
-	data := NewData(streamSize)
+	streamSize, headerLength := getStreamSizeAndHeaderLength(isFirst, stream, sample, sameTimeStamps)
 
+	data = NewData(streamSize)
 	pushSampleHeader(stream, sample, sameTimeStamps, streamSize, headerLength, data)
+
+	// If is first sample of packet
+	if isFirst {
+
+		// Push the SPS data and PPS to be sure first picture and sequence have parameters
+		pushSPSAndPPS(stream, data)
+	}
+
 	// For each NAL Units
 	for _, unit := range sample.NALUnits {
 
@@ -46,14 +53,22 @@ func CreateElementaryStreamSrc(stream StreamInfo, sample SampleInfo) ([]byte) {
 	return data.Data
 }
 
-func getStreamSizeAndHeaderLength(stream StreamInfo, sample SampleInfo, sameTimeStamps bool) (streamSize int, headerLength int) {
+func getStreamSizeAndHeaderLength(isFirst bool, stream StreamInfo, sample SampleInfo, sameTimeStamps bool) (streamSize int, headerLength int) {
 	headerLength = 5
 	if !sameTimeStamps {
 		headerLength += 5
 	}
 
 	// Stream size with header
-	streamSize = 9 + headerLength + int(sample.size)
+	streamSize = 9 + headerLength + int(sample.size) // 9 bytes are bytes before the
+
+	// If it's the first sample, add PPS and SPS to be sure there are parameters for
+	// first pictures and sequences set
+	if isFirst {
+		// Don't forget start code prefix
+		streamSize += 3 + len(stream.avcC.SPSData)
+		streamSize += 3 + len(stream.avcC.PPSData)
+	}
 
 	// Replace start code prefix with NALLength size
 	totalNALLengthSize := uint32(len(sample.NALUnits)) * stream.nalLengthSize
@@ -62,6 +77,14 @@ func getStreamSizeAndHeaderLength(stream StreamInfo, sample SampleInfo, sameTime
 
 	return
 }
+
+func pushSPSAndPPS(stream StreamInfo, data *Data) {
+	data.PushUInt(1, 24) // Start code prefix
+	data.PushAll(stream.avcC.SPSData)  // id 103, Sequence parameter set
+	data.PushUInt(1, 24) // Start code prefix
+	data.PushAll(stream.avcC.PPSData)  // id 104, Picture parameter set
+}
+
 
 func pushSampleHeader(stream StreamInfo, sample SampleInfo, sameTimeStamps bool, streamSize int, headerLength int, data *Data) {
 
