@@ -26,6 +26,9 @@ func GetSamplesInfo(stream StreamInfo, fragmentInfo FragmentInfo) (sampleInfo []
 
 		// Retrieve the compositionTimeOffset and decodingTimeOffset
 		registerCTSAndDTSSamples(stream, fragmentInfo, &sampleInfo)
+
+		// Scale timestamps with the timeScale
+		ScaleTimeStamps(stream, &sampleInfo)
 	}
 
 	return
@@ -167,5 +170,15 @@ func registerCTSAndDTSSamples(stream StreamInfo, fragmentInfo FragmentInfo, samp
 		} else {
 			sample.CTS = dts
 		}
+	}
+}
+
+func ScaleTimeStamps(stream StreamInfo, sampleInfo *[]SampleInfo) {
+	for i := 0; i < len(*sampleInfo); i++ {
+		sample := &(*sampleInfo)[i]
+
+		sample.PCR = uint64(float64(sample.PCR) * stream.ClockScaled)
+		sample.DTS = uint64(float64(sample.DTS) * stream.ClockScaled)
+		sample.CTS = uint64(float64(sample.CTS) * stream.ClockScaled)
 	}
 }

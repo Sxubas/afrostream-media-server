@@ -2,6 +2,7 @@ package ts
 
 import (
 	"mp4"
+	"time"
 )
 
 // Analyse the stream and get main information
@@ -61,7 +62,8 @@ func loadBoxes(info *StreamInfo) {
 
 func registerInformation(streamInfo *StreamInfo) {
 	// Get sample delta to compute PCR for each Sample
-	//streamInfo.SampleDelta = uint32(time.Second * time.Duration(streamInfo.stts.Entries[0].SampleDelta) / (time.Duration(streamInfo.Timescale) * 11111))
+	streamInfo.ClockScaled = float64(time.Second) / float64(time.Duration(streamInfo.Timescale) * 11111)
+
 	// Check if it has composition offset (PTS/DTS)
 	streamInfo.compositionTimeOffset = streamInfo.isVideo() && streamInfo.ctts.Offset != 0
 
