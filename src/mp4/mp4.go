@@ -3043,7 +3043,7 @@ func CreateDashInitWithConf(dConf DashConfig) (mp4Init map[string][]interface{})
     avcC.PPSEntryCount = dConf.Video.PPSEntryCount
     avcC.PPSSize = dConf.Video.PPSSize
     avcC.PPSData = dConf.Video.PPSData
-    avcC.Size = 38
+    avcC.Size = 40
     replaceBox(mp4Init, "moov.trak.mdia.minf.stbl.stsd.avc1.avcC", avcC)
 
     var btrt BtrtBox
