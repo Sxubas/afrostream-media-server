@@ -2,7 +2,6 @@ package ts
 
 import (
 	"mp4"
-	"fmt"
 )
 
 // Analyse the stream and get main information
