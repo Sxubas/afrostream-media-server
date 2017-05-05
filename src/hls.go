@@ -22,7 +22,7 @@ func main() {
 
 
 func launch() {
-	data, _ := readFile1("video" + ".json")
+	data, _ := readFile1("video2" + ".json")
 	var jConfig mp4.JsonConfig
 	json.Unmarshal(data, &jConfig)
 

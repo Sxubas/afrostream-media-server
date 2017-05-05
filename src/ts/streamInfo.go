@@ -17,6 +17,9 @@ type StreamInfo struct {
 	PID                   uint16
 	streamType            uint32
 
+	// Sample delta scaled with timeScale
+	sampleDeltaScaled	  uint32
+
 	// Number of bytes describing the nal length (e.g. 4)
 	nalLengthSize		  uint32
 }
