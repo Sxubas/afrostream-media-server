@@ -73,11 +73,11 @@ func CreateMediaDescriptor(videoId string, param string, extension string, fragm
 	s += "#EXT-X-PLAYLIST-TYPE:VOD\n"
 	s += fmt.Sprintf("#EXT-X-TARGETDURATION:%d\n", fragmentDuration)
 	s += "#EXT-X-VERSION:3\n"
-	s += "#EXT-X-MEDIA-SEQUENCE:0"
+	s += "#EXT-X-MEDIA-SEQUENCE:0\n"
 
-	for i := 0; i < numberOfSegment; i++ {
+	for i := 1; i <= numberOfSegment; i++ {
 		s += fmt.Sprintf("EXT-INF:%d,\n", fragmentDuration)
-		s += fmt.Sprintf("%s/hls/%s-%d.%s", videoId, param, i, extension)
+		s += fmt.Sprintf("%s/hls/%s/%d.%s\n", videoId, param, i, extension)
 	}
 
 	s += "#EXT-X-ENDLIST"

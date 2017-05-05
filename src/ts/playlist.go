@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"path"
 	"errors"
+	"fmt"
 )
 
 
@@ -15,8 +16,9 @@ func TreatM3U8Request(splitDirs []string, jConfig mp4.JsonConfig, VideoIdPath st
 	mediaType := splitDirs[0]
 
 	if len(splitDirs) == 1 {
-		mainDescriptor := CreateMainDescriptor(jConfig, videoId)
-		w.Write([]byte(mainDescriptor))
+		mainDescriptor := CreateMainDescriptor(jConfig, VideoIdPath)
+		//w.Write([]byte(mainDescriptor))
+		fmt.Println(mainDescriptor)
 	} else if len(splitDirs) == 3 {
 
 		// Request sub descriptor
@@ -33,8 +35,8 @@ func TreatM3U8Request(splitDirs []string, jConfig mp4.JsonConfig, VideoIdPath st
 			numberOfSegments := getNumberOfSegments(track, jConfig)
 
 			// Create the descriptor
-			param := "audio/"  + lang + "/"
-			audioDescriptor := CreateMediaDescriptor(videoId, param, ".ts", jConfig.SegmentDuration, numberOfSegments)
+			param := "audio/"  + lang
+			audioDescriptor := CreateMediaDescriptor(VideoIdPath, param, "ts", jConfig.SegmentDuration, numberOfSegments)
 			w.Write([]byte(audioDescriptor))
 			break
 		case "video":
@@ -49,8 +51,9 @@ func TreatM3U8Request(splitDirs []string, jConfig mp4.JsonConfig, VideoIdPath st
 			numberOfSegments := getNumberOfSegments(track, jConfig)
 
 			// Create the descriptor
-			param := "video/"  + idStr + "/"
-			videoDescriptor := CreateMediaDescriptor(videoId, param, ".ts", jConfig.SegmentDuration, numberOfSegments)
+			param := "video/" + idStr
+			videoDescriptor := CreateMediaDescriptor(VideoIdPath, param, "ts", jConfig.SegmentDuration, numberOfSegments)
+			fmt.Println(videoDescriptor)
 			w.Write([]byte(videoDescriptor))
 			break
 		default:
@@ -75,7 +78,11 @@ func findLanguageTrack(lang string, tracks []mp4.TrackEntry) (mp4.TrackEntry, er
 }
 
 func getNumberOfSegments(track mp4.TrackEntry, jConfig mp4.JsonConfig) (int) {
-	return int(track.Config.Duration) / int(jConfig.SegmentDuration)
+	numberOfSegments := int(track.Config.Duration) / int(jConfig.SegmentDuration * track.Config.Timescale)
+	if int(track.Config.Duration) % int(jConfig.SegmentDuration * track.Config.Timescale) != 0 {
+		numberOfSegments++
+	}
+	return numberOfSegments
 }
 
 func getIdTrack(idStr string, tracks []mp4.TrackEntry) (mp4.TrackEntry, error) {

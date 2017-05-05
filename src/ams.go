@@ -392,14 +392,14 @@ func treatM3U8Request(splitDirs[] string, videoId string, videoIdPath string, w 
 		return
 	}
 
-	err = ts.TreatM3U8Request(splitDirs, jConfig, videoIdPath, videoId, w)
+	err = ts.TreatM3U8Request(splitDirs, jConfig, videoIdPath + ".json", videoId, w)
 	if err != nil {
 		http.Error(w, `{ "status": "ERROR", "reason": "`+err.Error()+`" }`, http.StatusInternalServerError)
 		return
 	}
 }
 
-func treatTSRequest(videoId string, videoIdPath string, w http.ResponseWriter) {
+func treatTSRequest(splitDirs[] string, videoId string, videoIdPath string, w http.ResponseWriter) {
 
 	w.Header().Set("Content-Type", "video/MP2T")
 	data, err := readFile(videoIdPath + ".json")
@@ -410,6 +410,11 @@ func treatTSRequest(videoId string, videoIdPath string, w http.ResponseWriter) {
 	var jConfig mp4.JsonConfig
 	err = json.Unmarshal(data, &jConfig)
 
+	err = ts.TreatTSRequest(splitDirs, jConfig, videoIdPath + ".json", videoId, w)
+	if err != nil {
+		http.Error(w, `{ "status": "ERROR", "reason": "`+err.Error()+`" }`, http.StatusInternalServerError)
+		return
+	}
 }
 func httpRootServer(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -444,9 +449,9 @@ func httpRootServer(w http.ResponseWriter, r *http.Request) {
 			} else if splitDirs[1] == "hls" {
 				switch path.Ext(pathStr) {
 				case ".m3u8":
-					treatM3U8Request(splitDirs[1:], videoIdPath, s, w)
+					treatM3U8Request(splitDirs[2:], videoId, videoIdPath, w)
 				case ".ts":
-					treatTSRequest(videoIdPath, s, w)
+					treatTSRequest(splitDirs[2:], videoId, videoIdPath, w)
 				}
 			} else {
 				http.Error(w, `{ "status": "ERROR", "reason": "format is not supported" }`, http.StatusInternalServerError)
