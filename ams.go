@@ -46,21 +46,16 @@ import (
 
 func handleFileRequest(w http.ResponseWriter, r *http.Request, dir string, filename string) {
     html, err := ioutil.ReadFile(path.Join(dir, filename)) // dir + filename may be different from r.URL.Path
+    if err != nil {
+        http.Error(w, `{ "status": "ERROR", "reason": "` + err.Error() + `" }`, http.StatusInternalServerError)
+        logger.Error("%s", err.Error())
+        return
+    }
 
     switch path.Ext(filename) {
         case ".html":
-            if err != nil {
-                http.Error(w, `{ "status": "ERROR", "reason": "Page not found" }`, http.StatusNotFound)
-                logger.Error("%s", err.Error())
-                return
-            }
             w.Header().Set("Content-Type", "text/html")
         default:
-            if err != nil {
-                http.Error(w, `{ "status": "ERROR", "reason": "File not found" }`, http.StatusNotFound)
-                logger.Error("%s", err.Error())
-                return
-            }
             w.Header().Set("Content-Type", "application/octet-stream")
     }
 
@@ -113,7 +108,7 @@ func handleHttpRequest(w http.ResponseWriter, r *http.Request) {
 
     switch paths[0] {
         case "video":
-            handleContentRequest(w, r, dir[6:], filename)
+            handleContentRequest(w, r, dir[6:], filename) // Remove relative path /video/ -> /
         default:
             handleFileRequest(w, r, dir, filename)
     }
