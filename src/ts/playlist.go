@@ -9,7 +9,7 @@ import (
 	"fmt"
 )
 
-
+var DebugPlaylist bool = false
 
 func TreatM3U8Request(splitDirs []string, jConfig mp4.JsonConfig, w http.ResponseWriter) (error) {
 	mediaType := splitDirs[0]
@@ -17,7 +17,7 @@ func TreatM3U8Request(splitDirs []string, jConfig mp4.JsonConfig, w http.Respons
 	if len(splitDirs) == 1 {
 		mainDescriptor := CreateMainDescriptor(jConfig)
 		w.Write([]byte(mainDescriptor))
-		fmt.Println(mainDescriptor)
+		printDebug("Main Descriptor:", mainDescriptor)
 	} else if len(splitDirs) == 3 {
 
 		// Request sub descriptor
@@ -27,6 +27,7 @@ func TreatM3U8Request(splitDirs []string, jConfig mp4.JsonConfig, w http.Respons
 			lang := splitDirs[1]
 			track, err := findLanguageTrack(lang, jConfig.Tracks["audio"])
 			if err != nil {
+				fmt.Println("Audio lang not found")
 				return err
 			}
 
@@ -35,7 +36,7 @@ func TreatM3U8Request(splitDirs []string, jConfig mp4.JsonConfig, w http.Respons
 
 			// Create the descriptor
 			audioDescriptor := CreateMediaDescriptor("", "ts", jConfig.SegmentDuration, numberOfSegments)
-			fmt.Println(audioDescriptor)
+			printDebug("Audio Descriptor:", audioDescriptor)
 			w.Write([]byte(audioDescriptor))
 			break
 		case "video":
@@ -43,6 +44,7 @@ func TreatM3U8Request(splitDirs []string, jConfig mp4.JsonConfig, w http.Respons
 			idStr := splitDirs[1]
 			track, err := getIdTrack(idStr, jConfig.Tracks["video"])
 			if err != nil {
+				fmt.Println("No corresponding quality")
 				return err
 			}
 
@@ -51,7 +53,7 @@ func TreatM3U8Request(splitDirs []string, jConfig mp4.JsonConfig, w http.Respons
 
 			// Create the descriptor
 			videoDescriptor := CreateMediaDescriptor("", "ts", jConfig.SegmentDuration, numberOfSegments)
-			fmt.Println(videoDescriptor)
+			printDebug("Video Descriptor:", videoDescriptor)
 			w.Write([]byte(videoDescriptor))
 			break
 		default:
@@ -160,4 +162,12 @@ func TreatTSRequest(splitDirs []string, jConfig mp4.JsonConfig, videoIdPath stri
 	}
 
 	return nil
+}
+
+func printDebug (title string, text string) {
+	if DebugPlaylist {
+		fmt.Println(title)
+		fmt.Println(text)
+		fmt.Println("")
+	}
 }

@@ -22,7 +22,7 @@ func CreateMainAudioDescriptor(audios []mp4.TrackEntry) (s string) {
 			"NAME=\"%s\"," +
 			"AUTOSELECT=YES," +
 			"DEFAULT=YES," +
-			"URI=\"%s/index.m3u8\"\n",
+			"URI=\"audio/%s/index.m3u8\"\n",
 			audio.Lang,
 			audio.Lang,
 			audio.Lang)
