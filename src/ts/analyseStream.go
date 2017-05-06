@@ -43,26 +43,28 @@ func loadBoxes(info *StreamInfo) {
 		info.stts = mp4File["moov.trak.mdia.minf.stbl.stts"][0].(mp4.SttsBox)
 	}
 
-	// Retrieve all iFrames
-	// STSS
-	info.stss = mp4File["moov.trak.mdia.minf.stbl.stss"][0].(mp4.StssBox)
-
 	// Get size information
 	// STSZ
 	info.stsz = mp4File["moov.trak.mdia.minf.stbl.stsz"][0].(mp4.StszBox)
 
-	// Get nal information (And SPS/PPS)
-	// Avc box can be placed at two locations
-	avcCBox := mp4File["moov.trak.mdia.minf.stbl.stsd.avc1.avcC"]
-	if avcCBox == nil {
-		avcCBox = mp4File["moov.trak.mdia.minf.stbl.stsd.encv.avcC"]
+	if info.isVideo() {
+		// Retrieve all iFrames
+		// STSS
+		info.stss = mp4File["moov.trak.mdia.minf.stbl.stss"][0].(mp4.StssBox)
+
+		// Get nal information (And SPS/PPS)
+		// Avc box can be placed at two locations
+		avcCBox := mp4File["moov.trak.mdia.minf.stbl.stsd.avc1.avcC"]
+		if avcCBox == nil {
+			avcCBox = mp4File["moov.trak.mdia.minf.stbl.stsd.encv.avcC"]
+		}
+		info.avcC = avcCBox[0].(mp4.AvcCBox)
 	}
-	info.avcC = avcCBox[0].(mp4.AvcCBox)
 }
 
 func registerInformation(streamInfo *StreamInfo) {
 	// Get sample delta to compute PCR for each Sample
-	streamInfo.ClockScaled = float64(time.Second) / float64(time.Duration(streamInfo.Timescale) * 11111)
+	streamInfo.ClockScaled = float64(time.Second) / float64(time.Duration(streamInfo.Timescale)*11111)
 
 	// Check if it has composition offset (PTS/DTS)
 	streamInfo.compositionTimeOffset = streamInfo.isVideo() && streamInfo.ctts.Offset != 0
@@ -71,12 +73,13 @@ func registerInformation(streamInfo *StreamInfo) {
 	if streamInfo.isVideo() {
 		streamInfo.PID = 258
 		streamInfo.streamType = 27 //224
+
+		// Retrieve information for nal segmentation
+		// Use the avcC box: NalUnitLengthSize minus one + 1
+		streamInfo.nalLengthSize = uint32(streamInfo.avcC.NalUnitSize & 0x03 + 1)
 	} else {
 		streamInfo.PID = 256
 		streamInfo.streamType = 15 //127
 	}
 
-	// Retrieve information for nal segmentation
-	// Use the avcC box: NalUnitLengthSize minus one + 1
-	streamInfo.nalLengthSize = uint32(streamInfo.avcC.NalUnitSize & 0x03 + 1)
 }

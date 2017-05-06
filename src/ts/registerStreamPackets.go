@@ -32,7 +32,7 @@ func CreateElementaryStreamSrc(isFirst bool, stream StreamInfo, sample SampleInf
 	pushSampleHeader(stream, sample, sameTimeStamps, streamSize, headerLength, data)
 
 	// If is first sample of packet
-	if isFirst {
+	if isFirst && stream.isVideo() {
 
 		// Push the SPS data and PPS to be sure first picture and sequence have parameters
 		pushSPSAndPPS(stream, data)

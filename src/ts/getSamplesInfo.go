@@ -13,10 +13,10 @@ func GetSamplesInfo(stream StreamInfo, fragmentInfo FragmentInfo) (sampleInfo []
 	// Get size And offset of the sample in MDat
 	registerSamplesSizes(stream, fragmentInfo, &sampleInfo)
 
-	// Retrieve all NAL unit length in this sample
-	registerNalUnits(stream, &sampleInfo)
-
 	if stream.isVideo() {
+
+		// Retrieve all NAL unit length in this sample
+		registerNalUnits(stream, &sampleInfo)
 
 		// Registers all iFrames
 		registerISamples(fragmentInfo, &sampleInfo)
@@ -29,6 +29,14 @@ func GetSamplesInfo(stream StreamInfo, fragmentInfo FragmentInfo) (sampleInfo []
 
 		// Scale timestamps with the timeScale
 		ScaleTimeStamps(stream, &sampleInfo)
+	} else {
+
+		for i := 0; i < len(sampleInfo); i++ {
+			nalUnit := NALUnit{}
+			nalUnit.mdatOffset = sampleInfo[i].mdatOffset
+			nalUnit.mdatSize = sampleInfo[i].mdatSize
+			sampleInfo[i].NALUnits = append(sampleInfo[i].NALUnits, nalUnit)
+		}
 	}
 
 	return

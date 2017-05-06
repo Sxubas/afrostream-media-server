@@ -491,8 +491,10 @@ func main() {
 
 	err := syscall.Chroot(*documentRoot)
 	if err != nil {
-		fmt.Printf("Please run Afrostream Media Server as root, cannot chroot the document root directory for security: %v", err)
-		return
+		fmt.Printf("Please run Afrostream Media Server as root, cannot chroot the document root directory for security: %v\n", err)
+		fmt.Println("Changing port to 8080")
+		*portNumber = "8080"
+		//return
 	}
 
 	listenPort := ":" + *portNumber
