@@ -41,6 +41,7 @@ import (
 
     "logger"
     "mp4"
+    "util"
 )
 
 type fileSlice []string
@@ -84,11 +85,12 @@ func (s *languageSlice) Set(value string) error {
     return nil
 }
 
-func parseMp4Files(files []inputFile) (mp4Files map[string][]mp4.Mp4) {
+func parseMp4Files(dir string, files []inputFile) (mp4Files map[string][]mp4.Mp4) {
     mp4Files = make(map[string][]mp4.Mp4)
     for _, in := range files {
-        logger.Message("-- Parsing file='%s' language='%s'", in.Filename, in.Language)
-        mp4File := mp4.ParseFile(in.Filename, in.Language)
+        filename := path.Join(dir, in.Filename)
+        logger.Message("-- Parsing file='%s' language='%s'", filename, in.Language)
+        mp4File := mp4.ParseFile(filename, in.Language)
         if mp4File.IsVideo == true {
             mp4Files["video"] = append(mp4Files["video"], mp4File)
         }
@@ -118,7 +120,7 @@ func main() {
     flag.StringVar(&logfile, "log", "", "Log `filename` (stdout and stderr by default")
 
     var dir string
-    flag.StringVar(&dir, "d", "", "Video `directory`")
+    flag.StringVar(&dir, "d", "", "Video `directory`, relativ to the root directory of the server")
 
     var jsonFilename string
     flag.StringVar(&jsonFilename, "o", "video.json", "JSON output `filename`")
@@ -136,6 +138,9 @@ func main() {
         help()
         return
     }
+
+    dir = path.Clean(dir)
+    name := util.Basename(jsonFilename)
 
     logger.Init(logfile, logger.F_Debug)
     logger.Message("AMSPackager -- spebsd@gmail.com / Afrostream\n")
@@ -167,7 +172,7 @@ func main() {
         }
     }
 
-    mp4Files := parseMp4Files(mp4FileSlice)
+    mp4Files := parseMp4Files(dir, mp4FileSlice)
 
     var jConf mp4.JsonConfig
     jConf.Tracks = make(map[string][]mp4.TrackEntry)
@@ -191,7 +196,8 @@ func main() {
         elst := mp4File.Boxes["moov.trak.edts.elst"][0].(mp4.ElstBox)
         var t mp4.TrackEntry
         t.Bandwidth = uint64(float64(mdat.Size) / (float64(mdhd.Duration) / float64(mdhd.Timescale)) * 8)
-        t.Name = "video_" + mp4File.Language
+        t.Name = name
+        t.Dir = dir
         t.File = mp4File.Filename
         t.Lang = mp4File.Language
         t.Config = new(mp4.DashConfig)
@@ -246,7 +252,8 @@ func main() {
         elst := mp4File.Boxes["moov.trak.edts.elst"][0].(mp4.ElstBox)
         var t mp4.TrackEntry
         t.Bandwidth = uint64(float64(mdat.Size) / (float64(mdhd.Duration) / float64(mdhd.Timescale)) * 8)
-        t.Name = "audio_" + mp4File.Language
+        t.Name = name
+        t.Dir = dir
         t.File = mp4File.Filename
         t.Lang = mp4File.Language
         t.Config = new(mp4.DashConfig)
@@ -276,19 +283,20 @@ func main() {
     for _, vttFile := range vttFileSlice {
         var t mp4.TrackEntry
         t.Bandwidth = 256
-        t.Name = "caption_" + vttFile.Language
+        t.Name = name
+        t.Dir = dir
         t.File = vttFile.Filename
         t.Lang = vttFile.Language
         jConf.Tracks["subtitle"] = append(jConf.Tracks["subtitle"], t)
     }
 
-    jsonStr, err := json.Marshal(jConf)
+    jsonStr, err := json.MarshalIndent(jConf, "", "  ")
     if err != nil {
         panic(err)
     }
 
     logger.Message("\n-- Creating package file '%s'\n", jsonFilename)
-    f, err := os.Create(jsonFilename)
+    f, err := os.Create(path.Join(dir, jsonFilename))
     if err != nil {
         logger.Message("Cannot open file '%s' : %v", jsonFilename, err)
         return

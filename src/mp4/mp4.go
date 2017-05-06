@@ -32,11 +32,11 @@
 package mp4
 
 import (
-	"os"
-	"encoding/binary"
-	"log"
-	"strings"
-	"reflect"
+    "os"
+    "encoding/binary"
+    "log"
+    "strings"
+    "reflect"
 )
 
 var (
@@ -45,16 +45,17 @@ var (
 )
 
 type JsonConfig struct {
-  SegmentDuration uint32
-  Tracks map[string][]TrackEntry
+    SegmentDuration uint32
+    Tracks map[string][]TrackEntry
 }
 
 type TrackEntry struct {
-  Name string
-  Bandwidth uint64
-  File string
-  Lang string
-  Config *DashConfig `json:",omitempty"`
+    Name string
+    Dir string
+    File string
+    Lang string
+    Bandwidth uint64
+    Config *DashConfig `json:",omitempty"`
 }
 
 type DashAudioEntry struct {

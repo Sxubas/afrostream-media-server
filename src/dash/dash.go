@@ -104,7 +104,7 @@ func createAudioAdaptationSet(tracks []mp4.TrackEntry, videoId string, segmentDu
     s += `      </SegmentTemplate>` + "\n"
     for _, t := range tracks {
         s += `      <Representation` + "\n"
-        s += fmt.Sprintf(`        id="%s_%d"`, t.Name, t.Bandwidth) + "\n"
+        s += fmt.Sprintf(`        id="audio_%s_%d"`, t.Lang, t.Bandwidth) + "\n"
         s += fmt.Sprintf(`        bandwidth="%d">`, t.Bandwidth) + "\n"
         s += `      </Representation>` + "\n"
     }
@@ -174,7 +174,7 @@ func createVideoAdaptationSet(tracks []mp4.TrackEntry, videoId string, segmentDu
 
     for _, t := range tracks {
         s += `      <Representation` + "\n"
-        s += fmt.Sprintf(`        id="%s_%d"`, t.Name, t.Bandwidth) + "\n"
+        s += fmt.Sprintf(`        id="video_%s_%d"`, t.Lang, t.Bandwidth) + "\n"
         s += fmt.Sprintf(`        bandwidth="%d"`, t.Bandwidth) + "\n"
         s += fmt.Sprintf(`        width="%d"`, t.Config.Video.Width) + "\n"
         s += fmt.Sprintf(`        height="%d"`, t.Config.Video.Height) + "\n"
@@ -299,10 +299,8 @@ func HandleDashContentRequest(w http.ResponseWriter, r *http.Request, dir string
         return
     }
 
-    trackName = trackType + "_" + trackLang
-
     for _, t := range jConfig.Tracks[trackType] {
-        if t.Name == trackName && t.Bandwidth == trackBandwidth {
+        if t.Name == trackName && t.Lang == trackLang && t.Bandwidth == trackBandwidth {
             t.File = "/" + t.File
             var dashData map[string][]interface{}
             switch fileExt {
