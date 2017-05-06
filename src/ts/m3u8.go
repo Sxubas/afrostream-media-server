@@ -82,7 +82,7 @@ func CreateMediaDescriptor(param string, extension string, fragmentDuration uint
 	s += "#EXT-X-MEDIA-SEQUENCE:0\n"
 
 	for i := 1; i <= numberOfSegment; i++ {
-		s += fmt.Sprintf("#EXTINF:%d,\n", 2)
+		s += fmt.Sprintf("#EXTINF:%d,\n", fragmentDuration)
 		s += fmt.Sprintf("%s%d.%s\n", param, i, extension)
 	}
 
