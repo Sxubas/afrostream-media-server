@@ -60,7 +60,7 @@ func CreateMainVideoDescriptor(videos []mp4.TrackEntry) (s string) {
 			video.Config.Video.CodecInfo[1],
 			video.Config.Video.CodecInfo[2])
 
-		//s += ",AUDIO=\"audio\",SUBTITLES=\"subs\""
+		s += ",AUDIO=\"audio\",SUBTITLES=\"subs\""
 		/*if i == 0 {
 			s += ",AUTOSELECT=YES,DEFAULT=YES"
 		} else {
