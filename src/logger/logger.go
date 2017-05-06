@@ -43,6 +43,11 @@ const (
 
 var (
     flag int
+
+    prefixInfo string
+    prefixDebug string
+    prefixError string
+
     loggerInfo *log.Logger
     loggerError *log.Logger
 )
@@ -52,24 +57,28 @@ func Message(format string, v ...interface{}) {
 }
 
 func Info(format string, v...interface{}) {
-    loggerInfo.Printf(format, v...)
-}
-
-
-func Error(format string, v...interface{}) {
-    loggerError.Printf(format, v...)
+    loggerInfo.Printf(prefixInfo + format, v...)
 }
 
 func Debug(format string, v ...interface{}) {
     if flag & F_Debug != 0 {
-        fmt.Printf(format + "\n", v...)
+        fmt.Printf(prefixDebug + format + "\n", v...)
     }
+}
+
+func Error(format string, v...interface{}) {
+    loggerError.Printf(prefixError + format, v...)
 }
 
 func Init(filename string, flags int) {
     flag = flags
-    loggerInfo = log.New(os.Stdout, "[ INFO ] ", 0)
-    loggerError = log.New(os.Stderr, "[ ERROR ] ", 0)
+
+    prefixInfo = "[ INFO ] "
+    prefixDebug = "[ DEBUG ] "
+    prefixError = "[ ERROR ] "
+
+    loggerInfo = log.New(os.Stdout, "", log.LstdFlags)
+    loggerError = log.New(os.Stderr, "", log.LstdFlags)
 
     if filename == "" {
         return
