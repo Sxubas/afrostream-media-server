@@ -39,8 +39,10 @@ import (
 	"reflect"
 )
 
-var debugMode bool
-var funcBoxes map[string]interface{}
+var (
+    debugMode bool
+    funcBoxes map[string]interface{}
+)
 
 type JsonConfig struct {
   SegmentDuration uint32
