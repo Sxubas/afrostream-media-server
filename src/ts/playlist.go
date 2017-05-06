@@ -5,19 +5,18 @@ import (
 	"strings"
 	"mp4"
 	"strconv"
-	"path"
 	"errors"
 	"fmt"
 )
 
 
 
-func TreatM3U8Request(splitDirs []string, jConfig mp4.JsonConfig, VideoIdPath string, videoId string, w http.ResponseWriter) (error) {
+func TreatM3U8Request(splitDirs []string, jConfig mp4.JsonConfig, w http.ResponseWriter) (error) {
 	mediaType := splitDirs[0]
 
 	if len(splitDirs) == 1 {
-		mainDescriptor := CreateMainDescriptor(jConfig, VideoIdPath)
-		//w.Write([]byte(mainDescriptor))
+		mainDescriptor := CreateMainDescriptor(jConfig)
+		w.Write([]byte(mainDescriptor))
 		fmt.Println(mainDescriptor)
 	} else if len(splitDirs) == 3 {
 
@@ -35,8 +34,8 @@ func TreatM3U8Request(splitDirs []string, jConfig mp4.JsonConfig, VideoIdPath st
 			numberOfSegments := getNumberOfSegments(track, jConfig)
 
 			// Create the descriptor
-			param := "audio/"  + lang
-			audioDescriptor := CreateMediaDescriptor(VideoIdPath, param, "ts", jConfig.SegmentDuration, numberOfSegments)
+			audioDescriptor := CreateMediaDescriptor("", "ts", jConfig.SegmentDuration, numberOfSegments)
+			fmt.Println(audioDescriptor)
 			w.Write([]byte(audioDescriptor))
 			break
 		case "video":
@@ -51,8 +50,7 @@ func TreatM3U8Request(splitDirs []string, jConfig mp4.JsonConfig, VideoIdPath st
 			numberOfSegments := getNumberOfSegments(track, jConfig)
 
 			// Create the descriptor
-			param := "video/" + idStr
-			videoDescriptor := CreateMediaDescriptor(VideoIdPath, param, "ts", jConfig.SegmentDuration, numberOfSegments)
+			videoDescriptor := CreateMediaDescriptor("", "ts", jConfig.SegmentDuration, numberOfSegments)
 			fmt.Println(videoDescriptor)
 			w.Write([]byte(videoDescriptor))
 			break
@@ -101,20 +99,20 @@ func getIdTrack(idStr string, tracks []mp4.TrackEntry) (mp4.TrackEntry, error) {
 
 func TreatTSRequest(splitDirs []string, jConfig mp4.JsonConfig, videoIdPath string, videoId string, w http.ResponseWriter) (error) {
 	mediaType := splitDirs[0]
-
+	fmt.Println("[ts] Asking ts file")
 	if len(splitDirs) != 3 {
 		 return errors.New("Incorrect url access")
 	}
 	splitFragmentNumber := strings.Split(splitDirs[2], ".")
 
 	if len(splitFragmentNumber) < 2 {
-		return errors.New("Incorrect fragment number")
+		return errors.New("Incorrect file name (must be number + extension)")
 	}
 
 	fragmentNumber, err := strconv.Atoi(splitFragmentNumber[0])
 
 	if err != nil {
-		return errors.New("Incorrect fragment number: " + splitFragmentNumber[0])
+		return errors.New("Fragment number out of bounds: " + splitFragmentNumber[0])
 	}
 
 	var track mp4.TrackEntry
@@ -144,13 +142,14 @@ func TreatTSRequest(splitDirs []string, jConfig mp4.JsonConfig, videoIdPath stri
 	// Get the number of segment in this track
 	numberOfSegments := getNumberOfSegments(track, jConfig)
 
-	if fragmentNumber < 0 || fragmentNumber >= numberOfSegments {
+	if fragmentNumber <= 0 || fragmentNumber > numberOfSegments {
 		return errors.New("Incorrect fragment number :" + splitFragmentNumber[0])
 	}
 
-	filePath := path.Dir(videoIdPath) + "/" + track.File
+	filePath := "./" + track.File
 	fragment := CreateHLSFragmentWithConf(*track.Config, filePath, uint32(fragmentNumber), jConfig.SegmentDuration)
 	sizeToWrite := len(fragment)
+	fmt.Println("[Video] Writing ts")
 	w.Header().Set("Content-Length", strconv.Itoa(sizeToWrite))
 	for sizeToWrite > 0 {
 		num, err := w.Write(fragment)

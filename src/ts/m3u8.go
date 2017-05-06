@@ -5,16 +5,16 @@ import (
 	"fmt"
 )
 
-func CreateMainDescriptor(jConf mp4.JsonConfig, videoId string) (s string) {
+func CreateMainDescriptor(jConf mp4.JsonConfig) (s string) {
 	s = "#EXTM3U"
-	s += CreateMainAudioDescriptor(jConf.Tracks["audio"], videoId)
+	s += CreateMainAudioDescriptor(jConf.Tracks["audio"])
 	s += CreateMainSubtitlesDescriptor(jConf.Tracks["subtitle"])
-	s += CreateMainVideoDescriptor(jConf.Tracks["video"], videoId)
+	s += CreateMainVideoDescriptor(jConf.Tracks["video"])
 	return
 }
 
 // Create audio variant list
-func CreateMainAudioDescriptor(audios []mp4.TrackEntry, videoId string) (s string) {
+func CreateMainAudioDescriptor(audios []mp4.TrackEntry) (s string) {
 	for _, audio := range audios {
 		s += fmt.Sprintf("#EXT-X-MEDIA:" +
 			"TYPE=AUDIO,GROUP-ID=\"audio\"," +
@@ -22,10 +22,9 @@ func CreateMainAudioDescriptor(audios []mp4.TrackEntry, videoId string) (s strin
 			"NAME=\"%s\"," +
 			"AUTOSELECT=YES," +
 			"DEFAULT=YES," +
-			"URI=\"%s/hls/audio/%s/index.m3u8\"\n",
+			"URI=\"%s/index.m3u8\"\n",
 			audio.Lang,
 			audio.Lang,
-			videoId,
 			audio.Lang)
 	}
 	return
@@ -48,7 +47,7 @@ func CreateMainSubtitlesDescriptor(subtitles []mp4.TrackEntry) (s string) {
 
 // Create video quality variant list with stream
 // Variant list with different video can be added
-func CreateMainVideoDescriptor(videos []mp4.TrackEntry, videoId string) (s string) {
+func CreateMainVideoDescriptor(videos []mp4.TrackEntry) (s string) {
 
 	for i, video := range videos {
 		s += fmt.Sprintf("#EXT-X-STREAM-INF:PROGRAM-ID=1," +
@@ -61,13 +60,13 @@ func CreateMainVideoDescriptor(videos []mp4.TrackEntry, videoId string) (s strin
 			video.Config.Video.CodecInfo[0],
 			video.Config.Video.CodecInfo[1],
 			video.Config.Video.CodecInfo[2])
-		s += fmt.Sprintf("%s/hls/video/%d/index.m3u8\n", videoId, i)
+		s += fmt.Sprintf("video/%d/index.m3u8\n", i)
 	}
 	return
 }
 
 
-func CreateMediaDescriptor(videoId string, param string, extension string, fragmentDuration uint32, numberOfSegment int) (s string) {
+func CreateMediaDescriptor(param string, extension string, fragmentDuration uint32, numberOfSegment int) (s string) {
 
 	s = "#EXTM3U\n"
 	s += "#EXT-X-PLAYLIST-TYPE:VOD\n"
@@ -77,7 +76,7 @@ func CreateMediaDescriptor(videoId string, param string, extension string, fragm
 
 	for i := 1; i <= numberOfSegment; i++ {
 		s += fmt.Sprintf("EXT-INF:%d,\n", fragmentDuration)
-		s += fmt.Sprintf("%s/hls/%s/%d.%s\n", videoId, param, i, extension)
+		s += fmt.Sprintf("%s%d.%s\n", param, i, extension)
 	}
 
 	s += "#EXT-X-ENDLIST"

@@ -278,7 +278,7 @@ func treatDashRequest(videoIdPath string, s []string, w http.ResponseWriter) {
 		return
 	}
 	trackBandwidth = num
-	data, err := readFile(videoIdPath + ".json")
+	data, err := readFile("." + videoIdPath + ".json")
 	if err != nil {
 		http.Error(w, `{ "status": "ERROR", "reason": "`+err.Error()+`" }`, http.StatusInternalServerError)
 		return
@@ -328,7 +328,7 @@ func treatM4SRequest(videoIdPath string, s []string, w http.ResponseWriter) {
 	var segmentNumber uint32
 	segmentNumber = uint32(num)
 
-	data, err := readFile(videoIdPath + ".json")
+	data, err := readFile("." + videoIdPath + ".json")
 	if err != nil {
 		http.Error(w, `{ "status": "ERROR", "reason": "`+err.Error()+`" }`, http.StatusInternalServerError)
 		return
@@ -362,7 +362,7 @@ func treatM4SRequest(videoIdPath string, s []string, w http.ResponseWriter) {
 
 func treatMPDRequest(videoId string, videoIdPath string, w http.ResponseWriter) {
 	w.Header().Set("Content-Type", "application/dash+xml")
-	data, err := readFile(videoIdPath + ".json")
+	data, err := readFile("." + videoIdPath + ".json")
 	if err != nil {
 		http.Error(w, `{ "status": "ERROR", "reason": "`+err.Error()+`" }`, http.StatusInternalServerError)
 		return
@@ -377,10 +377,10 @@ func treatMPDRequest(videoId string, videoIdPath string, w http.ResponseWriter) 
 	w.Write([]byte(mpdContent))
 }
 
-func treatM3U8Request(splitDirs[] string, videoId string, videoIdPath string, w http.ResponseWriter) {
+func treatM3U8Request(splitDirs[] string, videoIdPath string, w http.ResponseWriter) {
 
 	w.Header().Set("Content-Type", "application/x-mpegURL")
-	data, err := readFile(videoIdPath + ".json")
+	data, err := readFile("." + videoIdPath + ".json")
 	if err != nil {
 		http.Error(w, `{ "status": "ERROR", "reason": "`+err.Error()+`" }`, http.StatusInternalServerError)
 		return
@@ -392,7 +392,7 @@ func treatM3U8Request(splitDirs[] string, videoId string, videoIdPath string, w 
 		return
 	}
 
-	err = ts.TreatM3U8Request(splitDirs, jConfig, videoIdPath + ".json", videoId, w)
+	err = ts.TreatM3U8Request(splitDirs, jConfig, w)
 	if err != nil {
 		http.Error(w, `{ "status": "ERROR", "reason": "`+err.Error()+`" }`, http.StatusInternalServerError)
 		return
@@ -402,7 +402,7 @@ func treatM3U8Request(splitDirs[] string, videoId string, videoIdPath string, w 
 func treatTSRequest(splitDirs[] string, videoId string, videoIdPath string, w http.ResponseWriter) {
 
 	w.Header().Set("Content-Type", "video/MP2T")
-	data, err := readFile(videoIdPath + ".json")
+	data, err := readFile("." + videoIdPath + ".json")
 	if err != nil {
 		http.Error(w, `{ "status": "ERROR", "reason": "`+err.Error()+`" }`, http.StatusInternalServerError)
 		return
@@ -449,7 +449,7 @@ func httpRootServer(w http.ResponseWriter, r *http.Request) {
 			} else if splitDirs[1] == "hls" {
 				switch path.Ext(pathStr) {
 				case ".m3u8":
-					treatM3U8Request(splitDirs[2:], videoId, videoIdPath, w)
+					treatM3U8Request(splitDirs[2:], videoIdPath, w)
 				case ".ts":
 					treatTSRequest(splitDirs[2:], videoId, videoIdPath, w)
 				}
