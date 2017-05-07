@@ -6,6 +6,8 @@ type SampleInfo struct {
 	CTS uint64
 	DTS uint64
 
+	hasPCR bool
+
 	isIFrameType bool
 
 	mdatOffset int64

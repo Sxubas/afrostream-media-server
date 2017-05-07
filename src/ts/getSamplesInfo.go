@@ -109,9 +109,16 @@ func registerISamples(info FragmentInfo, sampleInfo *[]SampleInfo) {
 
 func registerPCRSamples(stream StreamInfo, fragmentInfo FragmentInfo, sampleInfo *[]SampleInfo) {
 
+	emit := IEmitter{}
+	emit.Min_emit = 89
 	for i := 0; i < len(*sampleInfo); i++ {
-
-		(*sampleInfo)[i].PCR = (uint64(fragmentInfo.sampleStart) + uint64(i)) * uint64(stream.SampleDelta)
+		if emit.Emit() {
+			(*sampleInfo)[i].hasPCR = true
+			(*sampleInfo)[i].PCR = (uint64(fragmentInfo.sampleStart) + uint64(i)) * uint64(stream.SampleDelta)
+			emit.Reset()
+		} else {
+			(*sampleInfo)[i].hasPCR = false
+		}
 	}
 }
 
@@ -185,8 +192,8 @@ func ScaleTimeStamps(stream StreamInfo, sampleInfo *[]SampleInfo) {
 	for i := 0; i < len(*sampleInfo); i++ {
 		sample := &(*sampleInfo)[i]
 
-		sample.PCR = uint64(float64(sample.PCR) * stream.ClockScaled)
-		sample.DTS = uint64(float64(sample.DTS) * stream.ClockScaled)
-		sample.CTS = uint64(float64(sample.CTS) * stream.ClockScaled)
+		sample.PCR = 63000 + uint64(float64(sample.PCR) * stream.ClockScaled)
+		sample.DTS = 63000 * 2 + uint64(float64(sample.DTS) * stream.ClockScaled)
+		sample.CTS = 63000 * 2 + uint64(float64(sample.CTS) * stream.ClockScaled)
 	}
 }

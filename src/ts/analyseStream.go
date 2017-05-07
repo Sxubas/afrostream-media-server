@@ -14,11 +14,15 @@ func AnalyseStream(dConf mp4.Conf, filename string) (streamInfo *StreamInfo){
 	streamInfo.Conf = dConf
 	streamInfo.filename = filename
 
+
 	// Retrieve needed boxes
 	loadBoxes(streamInfo)
 
 	// Get the information from the boxes
 	registerInformation(streamInfo)
+
+
+	streamInfo.avcC.SPSData = append(streamInfo.avcC.SPSData, 0x00)
 
 	return
 }

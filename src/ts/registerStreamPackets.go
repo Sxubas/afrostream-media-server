@@ -4,9 +4,9 @@ package ts
 func RegisterStreamPackets(streamInfo StreamInfo, samplesInfo []SampleInfo, fragment *FragmentData) {
 
 	// For each sample
-	for sampleIndex, sample := range samplesInfo {
+	for _, sample := range samplesInfo {
 		// Create the elementary stream
-		elementaryStream := CreateElementaryStreamSrc(sampleIndex == 0, streamInfo, sample)
+		elementaryStream := CreateElementaryStreamSrc(streamInfo, sample)
 
 		// Create packets stream
 		pes := createPackets(streamInfo, sample, uint32(len(elementaryStream)))
@@ -20,23 +20,22 @@ func RegisterStreamPackets(streamInfo StreamInfo, samplesInfo []SampleInfo, frag
 }
 
 
-func CreateElementaryStreamSrc(isFirst bool, stream StreamInfo, sample SampleInfo) ([]byte) {
+func CreateElementaryStreamSrc(stream StreamInfo, sample SampleInfo) ([]byte) {
 
 	var data *Data
 	sameTimeStamps := sample.DTS == sample.CTS
 
 	// Create data holding the elementary stream
-	streamSize, headerLength := getStreamSizeAndHeaderLength(isFirst, stream, sample, sameTimeStamps)
+	streamSize, headerLength := getStreamSizeAndHeaderLength(stream, sample, sameTimeStamps)
 
 	data = NewData(streamSize)
 	pushSampleHeader(stream, sample, sameTimeStamps, streamSize, headerLength, data)
 
-	// If is first sample of packet
-	if isFirst && stream.isVideo() {
+	// Push start slice
+	data.PushAll([]byte{0x00, 0x00, 0x01, 0x09, 0xf0, 0x00})
 
-		// Push the SPS data and PPS to be sure first picture and sequence have parameters
-		pushSPSAndPPS(stream, data)
-	}
+	// Push the SPS data and PPS to be sure first picture and sequence have parameters
+	pushSPSAndPPS(stream, data)
 
 	// For each NAL Units
 	for _, unit := range sample.NALUnits {
@@ -53,7 +52,7 @@ func CreateElementaryStreamSrc(isFirst bool, stream StreamInfo, sample SampleInf
 	return data.Data
 }
 
-func getStreamSizeAndHeaderLength(isFirst bool, stream StreamInfo, sample SampleInfo, sameTimeStamps bool) (streamSize int, headerLength int) {
+func getStreamSizeAndHeaderLength(stream StreamInfo, sample SampleInfo, sameTimeStamps bool) (streamSize int, headerLength int) {
 	headerLength = 5
 	if !sameTimeStamps {
 		headerLength += 5
@@ -62,13 +61,13 @@ func getStreamSizeAndHeaderLength(isFirst bool, stream StreamInfo, sample Sample
 	// Stream size with header
 	streamSize = 9 + headerLength + int(sample.size) // 9 bytes are bytes before the
 
-	// If it's the first sample, add PPS and SPS to be sure there are parameters for
+	// Add start slice code
+	streamSize += len([]byte{0x00, 0x00, 0x01, 0x09, 0xf0, 0x00})
+
+	// Add PPS and SPS to be sure there are parameters for
 	// first pictures and sequences set
-	if isFirst {
-		// Don't forget start code prefix
-		streamSize += 3 + len(stream.avcC.SPSData)
-		streamSize += 3 + len(stream.avcC.PPSData)
-	}
+	streamSize += 3 + len(stream.avcC.SPSData) // start code prefix + len of data
+	streamSize += 3 + len(stream.avcC.PPSData) // start code prefix + len of data
 
 	// Replace start code prefix with NALLength size
 	totalNALLengthSize := uint32(len(sample.NALUnits)) * stream.nalLengthSize
@@ -212,9 +211,11 @@ func createPackets(info StreamInfo, sample SampleInfo, elementaryStreamSize uint
 func createFirstPacket(info StreamInfo, sample SampleInfo) (firstPacket *PES){
 	firstPacket = NewStartStream(info.PID, info.streamType)
 
-	pcr := PCR{}
-	pcr.BaseMediaDecodeTime = sample.PCR
-	firstPacket.setPCR(pcr)
+	if sample.hasPCR {
+		pcr := PCR{}
+		pcr.BaseMediaDecodeTime = sample.PCR
+		firstPacket.setPCR(pcr)
+	}
 
 	// IF isIFrame set RAP
 	if sample.IsIframe() {
