@@ -8,8 +8,17 @@ import (
 )
 
 type Data struct {
+	Bytes
 	Data   []byte
 	Offset int
+}
+
+func (data *Data) ToBytes() (Data) {
+	return *data
+}
+
+func (data *Data) Size() (int) {
+	return len(data.Data)
 }
 
 func (data *Data) PushUIntAlloc(object uint32, objectSize int) {

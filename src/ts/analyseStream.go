@@ -14,15 +14,11 @@ func AnalyseStream(dConf mp4.Conf, filename string) (streamInfo *StreamInfo){
 	streamInfo.Conf = dConf
 	streamInfo.filename = filename
 
-
 	// Retrieve needed boxes
 	loadBoxes(streamInfo)
 
 	// Get the information from the boxes
 	registerInformation(streamInfo)
-
-
-	streamInfo.avcC.SPSData = append(streamInfo.avcC.SPSData, 0x00)
 
 	return
 }
@@ -51,6 +47,9 @@ func loadBoxes(info *StreamInfo) {
 	// STSZ
 	info.stsz = mp4File["moov.trak.mdia.minf.stbl.stsz"][0].(mp4.StszBox)
 
+	// Get timeScale
+	info.mdhd = mp4File["moov.trak.mdia.mdhd"][0].(mp4.MdhdBox)
+
 	if info.isVideo() {
 		// Retrieve all iFrames
 		// STSS
@@ -68,7 +67,8 @@ func loadBoxes(info *StreamInfo) {
 
 func registerInformation(streamInfo *StreamInfo) {
 	// Get sample delta to compute PCR for each Sample
-	streamInfo.ClockScaled = float64(time.Second) / float64(time.Duration(streamInfo.Timescale)*11111)
+	timeScale := time.Duration(streamInfo.mdhd.Timescale)
+	streamInfo.ClockScaled = float64(time.Second) / float64(timeScale*11111)
 
 	// Check if it has composition offset (PTS/DTS)
 	streamInfo.compositionTimeOffset = streamInfo.isVideo() && streamInfo.ctts.Offset != 0
@@ -82,7 +82,7 @@ func registerInformation(streamInfo *StreamInfo) {
 		// Use the avcC box: NalUnitLengthSize minus one + 1
 		streamInfo.nalLengthSize = uint32(streamInfo.avcC.NalUnitSize & 0x03 + 1)
 	} else {
-		streamInfo.PID = 256
+		streamInfo.PID = 257
 		streamInfo.streamType = 15 //127
 	}
 

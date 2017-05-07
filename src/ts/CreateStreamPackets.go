@@ -1,7 +1,8 @@
 package ts
 
+
 // Create Elementary stream packets containing our stream src
-func RegisterStreamPackets(streamInfo StreamInfo, samplesInfo []SampleInfo, fragment *FragmentData) {
+func CreateStreamPackets(streamInfo StreamInfo, samplesInfo []SampleInfo, fragment *FragmentData) {
 
 	// For each sample
 	for _, sample := range samplesInfo {
@@ -19,7 +20,6 @@ func RegisterStreamPackets(streamInfo StreamInfo, samplesInfo []SampleInfo, frag
 	}
 }
 
-
 func CreateElementaryStreamSrc(stream StreamInfo, sample SampleInfo) ([]byte) {
 
 	var data *Data
@@ -31,21 +31,29 @@ func CreateElementaryStreamSrc(stream StreamInfo, sample SampleInfo) ([]byte) {
 	data = NewData(streamSize)
 	pushSampleHeader(stream, sample, sameTimeStamps, streamSize, headerLength, data)
 
-	// Push start slice
-	data.PushAll([]byte{0x00, 0x00, 0x01, 0x09, 0xf0, 0x00})
+	if stream.isVideo() {
+		// Push start slice
+		data.PushAll([]byte{0x00, 0x00, 0x01, 0x09, 0xf0, 0x00})
 
-	// Push the SPS data and PPS to be sure first picture and sequence have parameters
-	pushSPSAndPPS(stream, data)
+		// Push the SPS data and PPS to be sure first picture and sequence have parameters
+		pushSPSAndPPS(stream, data)
 
-	// For each NAL Units
-	for _, unit := range sample.NALUnits {
+		// For each NAL Units
+		for _, unit := range sample.NALUnits {
 
-		// Packet start id code
-		data.PushUInt(1, 24)
+			// Packet start id code
+			data.PushUInt(1, 24)
 
-		// Add the corresponding data
-		stream.mdat.Offset = unit.mdatOffset
-		stream.mdat.Size = unit.mdatSize
+			// Add the corresponding data
+			stream.mdat.Offset = unit.mdatOffset
+			stream.mdat.Size = unit.mdatSize
+			data.PushAll(stream.mdat.ToBytes())
+		}
+	} else {
+		pushADTSHeader(stream, sample.mdatSize, data)
+
+		stream.mdat.Offset = sample.mdatOffset
+		stream.mdat.Size = sample.mdatSize
 		data.PushAll(stream.mdat.ToBytes())
 	}
 
@@ -61,13 +69,17 @@ func getStreamSizeAndHeaderLength(stream StreamInfo, sample SampleInfo, sameTime
 	// Stream size with header
 	streamSize = 9 + headerLength + int(sample.size) // 9 bytes are bytes before the
 
-	// Add start slice code
-	streamSize += len([]byte{0x00, 0x00, 0x01, 0x09, 0xf0, 0x00})
+	if stream.isVideo() {
+		// Add start slice code
+		streamSize += len([]byte{0x00, 0x00, 0x01, 0x09, 0xf0, 0x00})
 
-	// Add PPS and SPS to be sure there are parameters for
-	// first pictures and sequences set
-	streamSize += 3 + len(stream.avcC.SPSData) // start code prefix + len of data
-	streamSize += 3 + len(stream.avcC.PPSData) // start code prefix + len of data
+		// Add PPS and SPS to be sure there are parameters for
+		// first pictures and sequences set
+		streamSize += 3 + len(stream.avcC.SPSData) // start code prefix + len of data
+		streamSize += 3 + len(stream.avcC.PPSData) // start code prefix + len of data
+	} else {
+		streamSize += 7 // ADTS
+	}
 
 	// Replace start code prefix with NALLength size
 	totalNALLengthSize := uint32(len(sample.NALUnits)) * stream.nalLengthSize
@@ -77,13 +89,31 @@ func getStreamSizeAndHeaderLength(stream StreamInfo, sample SampleInfo, sameTime
 	return
 }
 
+func pushADTSHeader(stream StreamInfo, frameLength uint32, data *Data) {
+	data.PushUInt(0xFFFF, 12) 	// SyncWord
+	data.PushUInt(0, 1)			// ID: 0 for MPEG-4, 1 for MPEG-2
+	data.PushUInt(0, 2)			// Layer
+	data.PushUInt(1, 1) 		// CRC Absent checksum
+	data.PushUInt(1, 2) 		// Profile: Using only Low complexity
+	data.PushUInt(3, 4)			// Sampling frequency: 48 000 khz
+	data.PushUInt(0, 1) 		// Private bit
+	data.PushUInt(uint32(stream.Audio.NumberOfChannels), 3) // Channel configuration: Number of channels
+	data.PushUInt(0, 1) 		// Original
+	data.PushUInt(0, 1)			// Home
+	data.PushUInt(0, 1	)		// Copyright identification bit
+	data.PushUInt(0, 1)			// CopyRight identification start
+	data.PushUInt(frameLength + 7, 13	)	// Frame length + ADT
+	data.PushUInt(0x7FF, 11)	// ADTS buffer fullness: variable rate
+	data.PushUInt(0, 2)			// Number of raw blocks in frame
+
+}
+
 func pushSPSAndPPS(stream StreamInfo, data *Data) {
 	data.PushUInt(1, 24) // Start code prefix
 	data.PushAll(stream.avcC.SPSData)  // id 103, Sequence parameter set
 	data.PushUInt(1, 24) // Start code prefix
 	data.PushAll(stream.avcC.PPSData)  // id 104, Picture parameter set
 }
-
 
 func pushSampleHeader(stream StreamInfo, sample SampleInfo, sameTimeStamps bool, streamSize int, headerLength int, data *Data) {
 
@@ -94,10 +124,12 @@ func pushSampleHeader(stream StreamInfo, sample SampleInfo, sameTimeStamps bool,
 	}
 
 	data.PushUInt(1, 24) 			// Packet start id code
-	data.PushUInt(224, 8) 			// Pes stream
+
 	if stream.isVideo() {
+		data.PushUInt(224, 8) 			// Pes stream
 		data.PushUInt(0, 16) 		// Stream size
 	} else {
+		data.PushUInt(192, 8) 			// Pes stream
 		data.PushUInt(uint32(streamSize - 5), 16)  // Stream size
 	}
 
@@ -126,59 +158,6 @@ func pushSampleHeader(stream StreamInfo, sample SampleInfo, sameTimeStamps bool,
 		data.PushUInt(1, 4)
 		pushTimestamp(sample.DTS, data)
 	}
-}
-
-func CreateSampleHeader(stream StreamInfo, sample SampleInfo) (data *Data) {
-
-	sameTimeStamps := sample.DTS == sample.CTS
-
-	// If CTS needed
-	headerLength := uint32(5)
-	flagPTSCode := uint32(0x02)
-	if !sameTimeStamps {
-		headerLength += 5
-		flagPTSCode = 0x03
-	}
-
-	streamSize := 9 + headerLength + sample.size
-
-	data = NewData(int(streamSize))
-	data.PushUInt(1, 24) 			// Packet start id code
-	data.PushUInt(224, 8) 			// Pes stream
-	if stream.isVideo() {
-		data.PushUInt(0, 16) 		// Stream size
-	} else {
-		data.PushUInt(streamSize - 5, 16)  // Stream size
-	}
-
-
-	data.PushUInt(0x2, 2) 			// '10'
-	data.PushUInt(0, 2) 				// PES_Scrambling_control
-	data.PushUInt(0, 1) 				// PES_Priority
-	data.PushUInt(1, 1)				// data alignment indicator
-	data.PushUInt(0, 1)				// copyright
-	data.PushUInt(0, 1)				// original or copy
-
-	data.PushUInt(flagPTSCode, 2) 			// PTS and DTS flag
-
-	data.PushUInt(0, 1)				// ESCR flag
-	data.PushUInt(0, 1)				// ESCR Rate flag
-	data.PushUInt(0, 1)				// DSM_trick_mode_flag
-	data.PushUInt(0, 1)				// additional_copy_info_flag
-	data.PushUInt(0, 1)				// PES_CRC_flag
-	data.PushUInt(0, 1)				// PES_extension_flag
-	data.PushUInt(headerLength, 8)			// Header length
-
-	data.PushUInt(flagPTSCode,4) 			// PTS and DTS flag
-
-	pushTimestamp(sample.CTS, data)
-
-	if !sameTimeStamps {
-		data.PushUInt(1, 4)
-		pushTimestamp(sample.DTS, data)
-	}
-
-	return data
 }
 
 func pushTimestamp(timestamp uint64, data *Data) {

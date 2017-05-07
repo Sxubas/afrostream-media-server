@@ -20,24 +20,16 @@ func GetSamplesInfo(stream StreamInfo, fragmentInfo FragmentInfo) (sampleInfo []
 
 		// Registers all iFrames
 		registerISamples(fragmentInfo, &sampleInfo)
-
-		// Compute the pcr
-		registerPCRSamples(stream, fragmentInfo, &sampleInfo)
-
-		// Retrieve the compositionTimeOffset and decodingTimeOffset
-		registerCTSAndDTSSamples(stream, fragmentInfo, &sampleInfo)
-
-		// Scale timestamps with the timeScale
-		ScaleTimeStamps(stream, &sampleInfo)
-	} else {
-
-		for i := 0; i < len(sampleInfo); i++ {
-			nalUnit := NALUnit{}
-			nalUnit.mdatOffset = sampleInfo[i].mdatOffset
-			nalUnit.mdatSize = sampleInfo[i].mdatSize
-			sampleInfo[i].NALUnits = append(sampleInfo[i].NALUnits, nalUnit)
-		}
 	}
+
+	// Retrieve the compositionTimeOffset and decodingTimeOffset
+	registerCTSAndDTSSamples(stream, fragmentInfo, &sampleInfo)
+
+	// Compute the pcr
+	registerPCRSamples(stream, fragmentInfo, &sampleInfo)
+
+	// Scale timestamps with the timeScale
+	ScaleTimeStamps(stream, &sampleInfo)
 
 	return
 }
@@ -110,7 +102,7 @@ func registerISamples(info FragmentInfo, sampleInfo *[]SampleInfo) {
 func registerPCRSamples(stream StreamInfo, fragmentInfo FragmentInfo, sampleInfo *[]SampleInfo) {
 
 	emit := IEmitter{}
-	emit.Min_emit = 89
+	emit.Min_emit = 0
 	for i := 0; i < len(*sampleInfo); i++ {
 		if emit.Emit() {
 			(*sampleInfo)[i].hasPCR = true

@@ -151,7 +151,6 @@ func TreatTSRequest(splitDirs []string, jConfig mp4.JsonConfig, videoIdPath stri
 	filePath := "./" + track.File
 	fragment := CreateHLSFragmentWithConf(*track.Config, filePath, uint32(fragmentNumber), jConfig.SegmentDuration)
 
-	//fragment, _ = ioutil.ReadFile("sample.ts")
 	sizeToWrite := len(fragment)
 	fmt.Println("[Video] Writing ts")
 	w.Header().Set("Content-Length", strconv.Itoa(sizeToWrite))

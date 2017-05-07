@@ -22,11 +22,11 @@ func main() {
 
 
 func launch() {
-	data, _ := readFile1("horses" + ".json")
+	data, _ := readFile1("samll_audio" + ".json")
 	var jConfig mp4.JsonConfig
 	json.Unmarshal(data, &jConfig)
 
-	track := jConfig.Tracks["video"][0]
+	track := jConfig.Tracks["audio"][0]
 	fragment := ts.CreateHLSFragmentWithConf(*track.Config, track.File, 1, jConfig.SegmentDuration)
 	writeSample("sample.ts", fragment)
 

@@ -1,7 +1,7 @@
 package ts
 
 // Create main packets program: PAT and PMT
-func RegisterProgramPackets(info StreamInfo, fragment *FragmentData) {
+func CreateProgramPackets(info StreamInfo, fragment *FragmentData) {
 	// Create PAT
 	fragment.pat = *NewPAT()
 

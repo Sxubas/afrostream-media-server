@@ -18,7 +18,7 @@ func CreateHLSFragmentWithConf(dConf mp4.Conf, filename string, fragmentNumber u
 	streamInfo := AnalyseStream(dConf, filename)
 
 	// 2) Create program packets
-	RegisterProgramPackets(*streamInfo, &modifiedFragment)
+	CreateProgramPackets(*streamInfo, &modifiedFragment)
 
 	// 3) Retrieve information on the created modifiedFragment
 	fragmentInfo := GetFragmentInfo(streamInfo, fragmentNumber, fragmentDuration)
@@ -27,7 +27,7 @@ func CreateHLSFragmentWithConf(dConf mp4.Conf, filename string, fragmentNumber u
 	samplesInfo := GetSamplesInfo(*streamInfo, *fragmentInfo)
 
 	// 5) Create PES packets
-	RegisterStreamPackets(*streamInfo, samplesInfo, &modifiedFragment)
+	CreateStreamPackets(*streamInfo, samplesInfo, &modifiedFragment)
 
 	// 6) Create our fragment assembling all created packets
 	fragment := FinaliseFragment(&modifiedFragment)

@@ -12,6 +12,7 @@ type StreamInfo struct {
 	stsz mp4.StszBox
 	stts mp4.SttsBox
 	avcC mp4.AvcCBox
+	mdhd mp4.MdhdBox
 
 	compositionTimeOffset bool
 	PID                   uint16
