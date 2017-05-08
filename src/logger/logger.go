@@ -53,21 +53,21 @@ var (
 )
 
 func Message(format string, v ...interface{}) {
-    fmt.Printf(format + "\n", v...)
+    fmt.Printf(format + "\n", v ...)
 }
 
-func Info(format string, v...interface{}) {
-    loggerInfo.Printf(prefixInfo + format, v...)
+func Info(format string, v ...interface{}) {
+    loggerInfo.Printf(prefixInfo + format, v ...)
 }
 
 func Debug(format string, v ...interface{}) {
     if flag & F_Debug != 0 {
-        fmt.Printf(prefixDebug + format + "\n", v...)
+        fmt.Printf(prefixDebug + format + "\n", v ...)
     }
 }
 
-func Error(format string, v...interface{}) {
-    loggerError.Printf(prefixError + format, v...)
+func Error(format string, v ...interface{}) {
+    loggerError.Printf(prefixError + format, v ...)
 }
 
 func Init(filename string, flags int) {

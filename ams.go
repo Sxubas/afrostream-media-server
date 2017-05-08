@@ -74,7 +74,12 @@ func handleContentRequest(w http.ResponseWriter, r *http.Request, dir string, fi
         case ".m4s":
             dash.HandleDashContentRequest(w, r, dir, filename)
             return
+
         case ".m3u8":
+            http.Error(w, `{ "status": "ERROR", "reason": "Not implemented yet" }`, http.StatusNotImplemented)
+            logger.Error("Not implemented yet")
+            return
+        case ".hls":
             http.Error(w, `{ "status": "ERROR", "reason": "Not implemented yet" }`, http.StatusNotImplemented)
             logger.Error("Not implemented yet")
             return
@@ -82,6 +87,7 @@ func handleContentRequest(w http.ResponseWriter, r *http.Request, dir string, fi
             http.Error(w, `{ "status": "ERROR", "reason": "Not implemented yet" }`, http.StatusNotImplemented)
             logger.Error("Not implemented yet")
             return
+
         case ".vtt":
             handleFileRequest(w, r, dir, filename)
         default:
