@@ -158,7 +158,7 @@ func (descriptor Descriptor) Size() (int) {
 func NewPMT(PCR_PID uint16) (pmt *PMT) {
 	pmt = new(PMT)
 
-	pmt.PID = 256
+	pmt.PID = 4096
 	pmt.PayloadUnitStartIndicator = 1
 	pmt.AdaptationFieldControl = 1
 

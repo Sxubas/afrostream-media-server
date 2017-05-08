@@ -100,6 +100,8 @@ func getIdTrack(idStr string, tracks []mp4.TrackEntry) (mp4.TrackEntry, error) {
 }
 
 func TreatTSRequest(splitDirs []string, jConfig mp4.JsonConfig, videoIdPath string, videoId string, w http.ResponseWriter) (error) {
+	var fragment []byte
+
 	mediaType := splitDirs[0]
 	fmt.Println("[ts] Asking ts file")
 	if len(splitDirs) != 3 {
@@ -149,10 +151,12 @@ func TreatTSRequest(splitDirs []string, jConfig mp4.JsonConfig, videoIdPath stri
 	}
 
 	filePath := "./" + track.File
-	fragment := CreateHLSFragmentWithConf(*track.Config, filePath, uint32(fragmentNumber), jConfig.SegmentDuration)
+	if fragment == nil {
+		fragment = CreateHLSFragmentWithConf(*track.Config, filePath, uint32(fragmentNumber), jConfig.SegmentDuration)
+	}
 
 	sizeToWrite := len(fragment)
-	fmt.Println("[Video] Writing ts")
+	fmt.Println("[" + mediaType + "]" + " Writing ts")
 	w.Header().Set("Content-Length", strconv.Itoa(sizeToWrite))
 	for sizeToWrite > 0 {
 		num, err := w.Write(fragment)

@@ -1,6 +1,5 @@
 package ts
 
-
 // Create Elementary stream packets containing our stream src
 func CreateStreamPackets(streamInfo StreamInfo, samplesInfo []SampleInfo, fragment *FragmentData) {
 
@@ -50,6 +49,7 @@ func CreateElementaryStreamSrc(stream StreamInfo, sample SampleInfo) ([]byte) {
 			data.PushAll(stream.mdat.ToBytes())
 		}
 	} else {
+
 		pushADTSHeader(stream, sample.mdatSize, data)
 
 		stream.mdat.Offset = sample.mdatOffset
@@ -77,15 +77,14 @@ func getStreamSizeAndHeaderLength(stream StreamInfo, sample SampleInfo, sameTime
 		// first pictures and sequences set
 		streamSize += 3 + len(stream.avcC.SPSData) // start code prefix + len of data
 		streamSize += 3 + len(stream.avcC.PPSData) // start code prefix + len of data
+
+		// Replace start code prefix with NALLength size
+		totalNALLengthSize := uint32(len(sample.NALUnits)) * stream.nalLengthSize
+		startCodePrefixSize := uint32(len(sample.NALUnits)) * 3
+		streamSize += int(startCodePrefixSize) - int(totalNALLengthSize)
 	} else {
-		streamSize += 7 // ADTS
+		streamSize += 7	// ADTS
 	}
-
-	// Replace start code prefix with NALLength size
-	totalNALLengthSize := uint32(len(sample.NALUnits)) * stream.nalLengthSize
-	startCodePrefixSize := uint32(len(sample.NALUnits)) * 3
-	streamSize += int(startCodePrefixSize) - int(totalNALLengthSize)
-
 	return
 }
 
@@ -130,7 +129,7 @@ func pushSampleHeader(stream StreamInfo, sample SampleInfo, sameTimeStamps bool,
 		data.PushUInt(0, 16) 		// Stream size
 	} else {
 		data.PushUInt(192, 8) 			// Pes stream
-		data.PushUInt(uint32(streamSize - 5), 16)  // Stream size
+		data.PushUInt(uint32(streamSize - 6), 16)  // Stream size
 	}
 
 	data.PushUInt(0x2, 2) 			// '10'
@@ -198,6 +197,8 @@ func createFirstPacket(info StreamInfo, sample SampleInfo) (firstPacket *PES){
 
 	// IF isIFrame set RAP
 	if sample.IsIframe() {
+		firstPacket.RandomAccessIndicator = 1
+	} else if info.isAudio() {
 		firstPacket.RandomAccessIndicator = 1
 	}
 

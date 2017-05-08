@@ -7,8 +7,8 @@ import (
 
 func CreateMainDescriptor(jConf mp4.JsonConfig) (s string) {
 	s = "#EXTM3U\n"
-	//s += CreateMainAudioDescriptor(jConf.Tracks["audio"])
-	//s += CreateMainSubtitlesDescriptor(jConf.Tracks["subtitle"])
+	s += CreateMainAudioDescriptor(jConf.Tracks["audio"])
+	s += CreateMainSubtitlesDescriptor(jConf.Tracks["subtitle"])
 	s += CreateMainVideoDescriptor(jConf.Tracks["video"])
 	return
 }

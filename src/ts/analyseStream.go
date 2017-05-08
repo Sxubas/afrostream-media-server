@@ -82,7 +82,7 @@ func registerInformation(streamInfo *StreamInfo) {
 		// Use the avcC box: NalUnitLengthSize minus one + 1
 		streamInfo.nalLengthSize = uint32(streamInfo.avcC.NalUnitSize & 0x03 + 1)
 	} else {
-		streamInfo.PID = 257
+		streamInfo.PID = 256
 		streamInfo.streamType = 15 //127
 	}
 

@@ -9,9 +9,9 @@ type PES struct {
 
 type PESSection struct {
 	Bytes
-	PacketStartCodePrefix uint32 // 24b
-	StreamId              uint32   // 1Byte
-	PES_PacketLength      uint16 // 2Bytes
+	PacketStartCodePrefix uint32  // 24b
+	StreamId              uint32  // 1Byte
+	PES_PacketLength      uint16  // 2Bytes
 }
 
 type OptionalPESHeader struct {
