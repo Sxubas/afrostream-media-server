@@ -66,6 +66,9 @@ func loadBoxes(info *StreamInfo) {
 }
 
 func registerInformation(streamInfo *StreamInfo) {
+	streamInfo.SampleDelta = streamInfo.stts.Entries[0].SampleDelta
+	streamInfo.Duration = streamInfo.mdhd.Duration
+
 	// Get sample delta to compute PCR for each Sample
 	timeScale := time.Duration(streamInfo.mdhd.Timescale)
 	streamInfo.ClockScaled = float64(time.Second) / float64(timeScale*11111)

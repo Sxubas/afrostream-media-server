@@ -184,8 +184,8 @@ func ScaleTimeStamps(stream StreamInfo, sampleInfo *[]SampleInfo) {
 	for i := 0; i < len(*sampleInfo); i++ {
 		sample := &(*sampleInfo)[i]
 
-		sample.PCR = 63000 + uint64(float64(sample.PCR) * stream.ClockScaled)
-		sample.DTS = 63000 * 2 + uint64(float64(sample.DTS) * stream.ClockScaled)
-		sample.CTS = 63000 * 2 + uint64(float64(sample.CTS) * stream.ClockScaled)
+		sample.PCR = uint64(float64(sample.PCR) * stream.ClockScaled)
+		sample.DTS = uint64(float64(sample.DTS) * stream.ClockScaled)
+		sample.CTS = uint64(float64(sample.CTS) * stream.ClockScaled)
 	}
 }

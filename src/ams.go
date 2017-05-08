@@ -503,7 +503,7 @@ func main() {
 	}
 
 	mp4.Debug(false)
-	ts.DebugPlaylist = true
+	ts.DebugPlaylist = false
 
 	err := syscall.Chroot(*documentRoot)
 	if err != nil {
