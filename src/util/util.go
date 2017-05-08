@@ -11,10 +11,6 @@ func SplitFilename(filename string) (string, string) {
     return filename[:len(filename) - len(ext)], ext
 }
 
-func Basename(filename string) string {
-    return filename[:len(filename)-len(path.Ext(filename))]
-}
-
 func ParseBasename(filename string) (string, string, string, string, error) {
     splitted := strings.Split(filename, "_")
 
