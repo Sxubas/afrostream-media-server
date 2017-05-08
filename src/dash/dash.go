@@ -32,30 +32,22 @@
 package dash
 
 import (
-    "encoding/json"
     "errors"
     "fmt"
-    "io/ioutil"
-    "net/http"
-    "path"
-    "strconv"
-    "strings"
 
-    "logger"
     "mp4"
-    "util"
 )
 
 const (
     drm_system_id_widevine = "edef8ba979d64acea3c827dcd51d21ed"
 )
 
-func createExternalSubtitlesAdaptationSet(tracks []mp4.TrackEntry) (s string, err error) {
+func createExternalSubtitlesAdaptationSet(tracks []mp4.TrackEntry, videoId string) (s string, err error) {
     s = ""
     for _, t := range tracks {
         s += fmt.Sprintf(`    <AdaptationSet mimeType="text/vtt" lang="%s">`, t.Lang) + "\n"
-        s += fmt.Sprintf(`      <Representation id="%s" bandwidth="%d">`, t.Name, t.Bandwidth) + "\n"
-        s += fmt.Sprintf(`        <BaseURL>%s</BaseURL>`, t.File) + "\n"
+        s += fmt.Sprintf(`      <Representation id="subtitle_%s" bandwidth="%d">`, t.Lang, t.Bandwidth) + "\n"
+        s += fmt.Sprintf(`        <BaseURL>%s_subtitle_%s_%d.vtt</BaseURL>`, videoId, t.Lang, t.Bandwidth) + "\n"
         s += `      </Representation>` + "\n"
         s += `    </AdaptationSet>` + "\n"
     }
@@ -195,7 +187,7 @@ func createContentProtection(jConf mp4.JsonConfig, videoId string) (s string) {
     return
 }
 
-func createDashManifest(jConf mp4.JsonConfig, videoId string) (dashManifest string) {
+func CreateDashManifest(jConf mp4.JsonConfig, videoId string) (dashManifest string) {
     dashManifest = ""
     dashManifest += `<?xml version="1.0" encoding="utf-8"?>` + "\n"
     dashManifest += `<!-- Created with Afrostream Media Server -->` + "\n"
@@ -227,7 +219,7 @@ func createDashManifest(jConf mp4.JsonConfig, videoId string) (dashManifest stri
         return
     }
     dashManifest += a
-    a, err = createExternalSubtitlesAdaptationSet(jConf.Tracks["subtitle"])
+    a, err = createExternalSubtitlesAdaptationSet(jConf.Tracks["subtitle"], videoId)
     if err != nil {
         return
     }
@@ -236,110 +228,5 @@ func createDashManifest(jConf mp4.JsonConfig, videoId string) (dashManifest stri
     dashManifest += `</MPD>` + "\n"
 
     return
-}
-
-func HandleDashManifestRequest(w http.ResponseWriter, r *http.Request, dir string, filename string) {
-    basename := util.Basename(filename)
-
-    data, err := ioutil.ReadFile(path.Join(dir, basename + ".json"))
-
-    if err != nil {
-        http.Error(w, `{ "status": "ERROR", "reason": "` + err.Error() + `" }`, http.StatusInternalServerError)
-        logger.Error("%s", err.Error())
-        return
-    }
-
-    var jConfig mp4.JsonConfig
-    err = json.Unmarshal(data, &jConfig)
-    if err != nil {
-        http.Error(w, `{ "status": "ERROR", "reason": "` + err.Error() + `" }`, http.StatusInternalServerError)
-        logger.Error("%s", err.Error())
-        return
-    }
-
-    manifest := createDashManifest(jConfig, basename)
-
-    w.Header().Set("Content-Type", "application/dash+xml")
-    w.Header().Set("Content-Length", strconv.Itoa(len(manifest)))
-    w.Write([]byte(manifest))
-}
-
-func HandleDashContentRequest(w http.ResponseWriter, r *http.Request, dir string, filename string) {
-    w.Header().Set("Content-Type", "video/mp4")
-    
-    fileBase, fileExt := util.SplitFilename(filename)
-    trackName, trackType, trackLang, trackId, err := util.ParseBasename(fileBase)
-    if err != nil {
-        http.Error(w, `{ "status": "ERROR", "reason": "` + err.Error() + `" }`, http.StatusInternalServerError)
-        logger.Error("%s", err.Error())
-        return
-    }
-
-    trackIds := strings.Split(trackId, "-")
-    var trackBandwidth uint64
-    trackBandwidth, err = strconv.ParseUint(trackIds[0], 10, 64)
-    if err != nil {
-        http.Error(w, `{ "status": "ERROR", "reason": "` + err.Error() + `" }`, http.StatusInternalServerError)
-        logger.Error("%s", err.Error())
-        return
-    }
-
-    data, err := ioutil.ReadFile(path.Join(dir, trackName + ".json"))
-    if err != nil {
-        http.Error(w, `{ "status": "ERROR", "reason": "` + err.Error() + `" }`, http.StatusInternalServerError)
-        logger.Error("%s", err.Error())
-        return
-    }
-
-    var jConfig mp4.JsonConfig
-    err = json.Unmarshal(data, &jConfig)
-    if err != nil {
-        http.Error(w, `{ "status": "ERROR", "reason": "` + err.Error() + `" }`, http.StatusInternalServerError)
-        logger.Error("%s", err.Error())
-        return
-    }
-
-    for _, t := range jConfig.Tracks[trackType] {
-        if t.Name == trackName && t.Lang == trackLang && t.Bandwidth == trackBandwidth {
-            t.File = "/" + t.File
-            var dashData map[string][]interface{}
-            switch fileExt {
-                case ".dash":
-                    dashData = mp4.CreateDashInitWithConf(*t.Config) // InitData
-                case ".m4s":
-                    if len(trackIds) !=2 {
-                        http.Error(w, `{ "status": "ERROR", "reason": "Invalid track Id" }`, http.StatusInternalServerError)
-                        logger.Error("Invalid track Id")
-                        return
-                    }
-                    var num uint64
-                    num, err = strconv.ParseUint(trackIds[1], 10, 32)
-                    if err != nil {
-                        http.Error(w, `{ "status": "ERROR", "reason": "` + err.Error() + `" }`, http.StatusInternalServerError)
-                        logger.Error("%s", err.Error())
-                        return
-                    }
-                    var segmentNumber uint32
-                    segmentNumber = uint32(num)
-                    dashData = mp4.CreateDashFragmentWithConf(*t.Config, t.File, segmentNumber, jConfig.SegmentDuration) // Fragment
-                default :
-                    http.Error(w, `{ "status": "ERROR", "reason": "` + err.Error() + `" }`, http.StatusInternalServerError)
-                    logger.Error("%s", err.Error())
-                    return
-            }
-            b := mp4.MapToBytes(dashData) // InitData or Fragment
-            w.Header().Set("Content-Length", strconv.Itoa(len(b)))
-            _, err := w.Write(b)
-            if err != nil {
-                http.Error(w, `{ "status": "ERROR", "reason": "` + err.Error() + `" }`, http.StatusInternalServerError)
-                logger.Error("%s", err.Error())
-                return
-            }
-            return
-        }
-    }
-
-    http.Error(w, `{ "status": "ERROR", "reason": "File not found : ` + path.Join(dir, filename) + `" }`, http.StatusInternalServerError)
-    logger.Error("File not found")
 }
 

@@ -50,11 +50,9 @@ type JsonConfig struct {
 }
 
 type TrackEntry struct {
-    Name string
-    Dir string
-    File string
     Lang string
     Bandwidth uint64
+    File string
     Config *DashConfig `json:",omitempty"`
 }
 

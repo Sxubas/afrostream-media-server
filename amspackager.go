@@ -41,7 +41,6 @@ import (
 
     "logger"
     "mp4"
-    "util"
 )
 
 type fileSlice []string
@@ -85,12 +84,11 @@ func (s *languageSlice) Set(value string) error {
     return nil
 }
 
-func parseMp4Files(dir string, files []inputFile) (mp4Files map[string][]mp4.Mp4) {
+func parseMp4Files(files []inputFile) (mp4Files map[string][]mp4.Mp4) {
     mp4Files = make(map[string][]mp4.Mp4)
     for _, in := range files {
-        filename := path.Join(dir, in.Filename)
-        logger.Message("-- Parsing file='%s' language='%s'", filename, in.Language)
-        mp4File := mp4.ParseFile(filename, in.Language)
+        logger.Message("-- Parsing file='%s' language='%s'", in.Filename, in.Language)
+        mp4File := mp4.ParseFile(in.Filename, in.Language)
         if mp4File.IsVideo == true {
             mp4Files["video"] = append(mp4Files["video"], mp4File)
         }
@@ -119,14 +117,11 @@ func main() {
     var logfile string
     flag.StringVar(&logfile, "log", "", "Log `filename` (stdout and stderr by default")
 
-    var dir string
-    flag.StringVar(&dir, "d", "", "Video `directory`, relativ to the root directory of the server")
-
     var jsonFilename string
     flag.StringVar(&jsonFilename, "o", "video.json", "JSON output `filename`")
 
     var segmentDuration uint
-    flag.UintVar(&segmentDuration, "t", 10, "Segments `duration` in seconds")
+    flag.UintVar(&segmentDuration, "d", 10, "Segments `duration` in seconds")
 
     flag.Var(&inputFilenames, "i", "MP4 or VTT input `filename`\n\t\tMP4 -> avc1 video or mp4a audio (only one stream per mp4 file is supported)\n\t\tVTT -> vtt subtitles")
 
@@ -138,9 +133,6 @@ func main() {
         help()
         return
     }
-
-    dir = path.Clean(dir)
-    name := util.Basename(jsonFilename)
 
     logger.Init(logfile, logger.F_Debug)
     logger.Message("AMSPackager -- spebsd@gmail.com / Afrostream\n")
@@ -172,7 +164,7 @@ func main() {
         }
     }
 
-    mp4Files := parseMp4Files(dir, mp4FileSlice)
+    mp4Files := parseMp4Files(mp4FileSlice)
 
     var jConf mp4.JsonConfig
     jConf.Tracks = make(map[string][]mp4.TrackEntry)
@@ -196,8 +188,6 @@ func main() {
         elst := mp4File.Boxes["moov.trak.edts.elst"][0].(mp4.ElstBox)
         var t mp4.TrackEntry
         t.Bandwidth = uint64(float64(mdat.Size) / (float64(mdhd.Duration) / float64(mdhd.Timescale)) * 8)
-        t.Name = name
-        t.Dir = dir
         t.File = mp4File.Filename
         t.Lang = mp4File.Language
         t.Config = new(mp4.DashConfig)
@@ -252,8 +242,6 @@ func main() {
         elst := mp4File.Boxes["moov.trak.edts.elst"][0].(mp4.ElstBox)
         var t mp4.TrackEntry
         t.Bandwidth = uint64(float64(mdat.Size) / (float64(mdhd.Duration) / float64(mdhd.Timescale)) * 8)
-        t.Name = name
-        t.Dir = dir
         t.File = mp4File.Filename
         t.Lang = mp4File.Language
         t.Config = new(mp4.DashConfig)
@@ -280,23 +268,25 @@ func main() {
         jConf.Tracks["audio"] = append(jConf.Tracks["audio"], t)
     }
 
+    logger.Message("")
+
     for _, vttFile := range vttFileSlice {
+        logger.Message("-- Adding subtitle='%s' language='%s'", vttFile.Filename, vttFile.Language)
         var t mp4.TrackEntry
         t.Bandwidth = 256
-        t.Name = name
-        t.Dir = dir
         t.File = vttFile.Filename
         t.Lang = vttFile.Language
         jConf.Tracks["subtitle"] = append(jConf.Tracks["subtitle"], t)
     }
 
-    jsonStr, err := json.MarshalIndent(jConf, "", "  ")
+    //jsonStr, err := json.Marshaldent(jConf, "", "  ")
+    jsonStr, err := json.Marshal(jConf)
     if err != nil {
         panic(err)
     }
 
     logger.Message("\n-- Creating package file '%s'\n", jsonFilename)
-    f, err := os.Create(path.Join(dir, jsonFilename))
+    f, err := os.Create(jsonFilename)
     if err != nil {
         logger.Message("Cannot open file '%s' : %v", jsonFilename, err)
         return

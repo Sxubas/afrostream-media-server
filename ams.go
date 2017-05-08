@@ -32,6 +32,7 @@
 package main
 
 import (
+    "encoding/json"
     "flag"
     "io/ioutil"
     "net/http"
@@ -42,58 +43,186 @@ import (
 
     "dash"
     "logger"
+    "mp4"
+    "util"
 )
 
-func handleFileRequest(w http.ResponseWriter, r *http.Request, dir string, filename string) {
-    html, err := ioutil.ReadFile(path.Join(dir, filename)) // dir + filename may be different from r.URL.Path
+func handleHtmlRequest(w http.ResponseWriter, r *http.Request) {
+    html, err := ioutil.ReadFile(r.URL.Path)
     if err != nil {
         http.Error(w, `{ "status": "ERROR", "reason": "` + err.Error() + `" }`, http.StatusInternalServerError)
         logger.Error("%s", err.Error())
         return
     }
 
-    switch path.Ext(filename) {
-        case ".html":
-            w.Header().Set("Content-Type", "text/html")
-        default:
-            w.Header().Set("Content-Type", "application/octet-stream")
-    }
-
+    w.Header().Set("Content-Type", "text/html")
     w.Header().Set("Content-Length", strconv.Itoa(len(html)))
-    w.Write(html)
+
+    _, err = w.Write(html)
+    if err != nil {
+        http.Error(w, `{ "status": "ERROR", "reason": "` + err.Error() + `" }`, http.StatusInternalServerError)
+        logger.Error("%s", err.Error())
+    }
 }
 
-func handleContentRequest(w http.ResponseWriter, r *http.Request, dir string, filename string) {
-    switch path.Ext(filename) {
+func handleFileRequest(w http.ResponseWriter, path string) {
+    data, err := ioutil.ReadFile(path)
+    if err != nil {
+        http.Error(w, `{ "status": "ERROR", "reason": "` + err.Error() + `" }`, http.StatusInternalServerError)
+        logger.Error("%s", err.Error())
+        return
+    }
+
+    w.Header().Set("Content-Type", "application/octet-stream")
+    w.Header().Set("Content-Length", strconv.Itoa(len(data)))
+
+    _, err = w.Write(data)
+    if err != nil {
+        http.Error(w, `{ "status": "ERROR", "reason": "` + err.Error() + `" }`, http.StatusInternalServerError)
+        logger.Error("%s", err.Error())
+    }
+}
+
+func handleManifestRequest(w http.ResponseWriter, r *http.Request, dir string, basename string, extension string) {
+    data, err := ioutil.ReadFile(path.Join(dir, basename + ".json"))
+    if err != nil {
+        http.Error(w, `{ "status": "ERROR", "reason": "` + err.Error() + `" }`, http.StatusInternalServerError)
+        logger.Error("%s", err.Error())
+        return
+    }
+
+    var jConfig mp4.JsonConfig
+    err = json.Unmarshal(data, &jConfig)
+    if err != nil {
+        http.Error(w, `{ "status": "ERROR", "reason": "` + err.Error() + `" }`, http.StatusInternalServerError)
+        logger.Error("%s", err.Error())
+        return
+    }
+
+    var manifest string
+    switch extension {
         case ".mpd":
-            dash.HandleDashManifestRequest(w, r, dir, filename)
+            manifest = dash.CreateDashManifest(jConfig, basename)
+    }
+
+    w.Header().Set("Content-Type", "application/dash+xml")
+    w.Header().Set("Content-Length", strconv.Itoa(len(manifest)))
+    _, err = w.Write([]byte(manifest))
+    if err != nil {
+        http.Error(w, `{ "status": "ERROR", "reason": "` + err.Error() + `" }`, http.StatusInternalServerError)
+        logger.Error("%s", err.Error())
+    }
+}
+
+func handleMediaRequest(w http.ResponseWriter, r *http.Request, dir string, basename string, extension string) {
+    //w.Header().Set("Content-Type", "video/mp4")
+    
+    trackName, trackType, trackLang, trackId, err := util.ParseBasename(basename)
+    if err != nil {
+        http.Error(w, `{ "status": "ERROR", "reason": "` + err.Error() + `" }`, http.StatusInternalServerError)
+        logger.Error("%s", err.Error())
+        return
+    }
+
+    trackIds := strings.Split(trackId, "-")
+    var trackBandwidth uint64
+    trackBandwidth, err = strconv.ParseUint(trackIds[0], 10, 64)
+    if err != nil {
+        http.Error(w, `{ "status": "ERROR", "reason": "` + err.Error() + `" }`, http.StatusInternalServerError)
+        logger.Error("%s", err.Error())
+        return
+    }
+
+    data, err := ioutil.ReadFile(path.Join(dir, trackName + ".json"))
+    if err != nil {
+        http.Error(w, `{ "status": "ERROR", "reason": "` + err.Error() + `" }`, http.StatusInternalServerError)
+        logger.Error("%s", err.Error())
+        return
+    }
+
+    var jConfig mp4.JsonConfig
+    err = json.Unmarshal(data, &jConfig)
+    if err != nil {
+        http.Error(w, `{ "status": "ERROR", "reason": "` + err.Error() + `" }`, http.StatusInternalServerError)
+        logger.Error("%s", err.Error())
+        return
+    }
+
+    for _, t := range jConfig.Tracks[trackType] {
+        if t.Lang == trackLang && t.Bandwidth == trackBandwidth {
+            t.File = "/" + t.File
+
+            var content map[string][]interface{}
+
+            // DASH : InitData or Fragment
+            // HLS  : Playlist or Fragment
+            // Subititles
+
+            switch extension {
+                case ".dash":
+                    content = mp4.CreateDashInitWithConf(*t.Config) // InitData
+                case ".m4s":
+                    if len(trackIds) !=2 {
+                        http.Error(w, `{ "status": "ERROR", "reason": "Invalid track Id" }`, http.StatusInternalServerError)
+                        logger.Error("Invalid track Id")
+                        return
+                    }
+                    var num uint64
+                    num, err = strconv.ParseUint(trackIds[1], 10, 32)
+                    if err != nil {
+                        http.Error(w, `{ "status": "ERROR", "reason": "` + err.Error() + `" }`, http.StatusInternalServerError)
+                        logger.Error("%s", err.Error())
+                        return
+                    }
+                    var segmentNumber uint32
+                    segmentNumber = uint32(num)
+                    content = mp4.CreateDashFragmentWithConf(*t.Config, t.File, segmentNumber, jConfig.SegmentDuration) // Fragment
+                case ".vtt":
+                    handleFileRequest(w, t.File)
+                    return
+            }
+
+            b := mp4.MapToBytes(content)
+            w.Header().Set("Content-Length", strconv.Itoa(len(b)))
+            _, err := w.Write(b)
+            if err != nil {
+                http.Error(w, `{ "status": "ERROR", "reason": "` + err.Error() + `" }`, http.StatusInternalServerError)
+                logger.Error("%s", err.Error())
+                return
+            }
             return
+        }
+    }
+
+    http.Error(w, `{ "status": "ERROR", "reason": "Media not found : ` + path.Join(dir, basename + extension) + `" }`, http.StatusInternalServerError)
+    logger.Error("Media not found : %s", path.Join(dir, basename + extension))
+}
+
+func handleContentRequest(w http.ResponseWriter, r *http.Request, dir string, basename string, extension string) {
+    switch extension {
+        case ".mpd":
+            handleManifestRequest(w, r, dir, basename, extension)
         case ".dash":
-            dash.HandleDashContentRequest(w, r, dir, filename)
-            return
+            handleMediaRequest(w, r, dir, basename, extension)
         case ".m4s":
-            dash.HandleDashContentRequest(w, r, dir, filename)
-            return
+            handleMediaRequest(w, r, dir, basename, extension)
 
         case ".m3u8":
             http.Error(w, `{ "status": "ERROR", "reason": "Not implemented yet" }`, http.StatusNotImplemented)
             logger.Error("Not implemented yet")
-            return
         case ".hls":
             http.Error(w, `{ "status": "ERROR", "reason": "Not implemented yet" }`, http.StatusNotImplemented)
             logger.Error("Not implemented yet")
-            return
         case ".ts":
             http.Error(w, `{ "status": "ERROR", "reason": "Not implemented yet" }`, http.StatusNotImplemented)
             logger.Error("Not implemented yet")
-            return
 
         case ".vtt":
-            handleFileRequest(w, r, dir, filename)
+            handleMediaRequest(w, r, dir, basename, extension)
+
         default:
             http.Error(w, `{ "status": "ERROR", "reason": "Format is not supported" }`, http.StatusInternalServerError)
             logger.Error("Format is not supported")
-            return
     }
 }
 
@@ -107,6 +236,7 @@ func handleHttpRequest(w http.ResponseWriter, r *http.Request) {
     w.Header().Set("Connection", "close")
 
     dir, filename := path.Split(path.Clean(r.URL.Path))
+    basename, extension := util.SplitFilename(filename)
 
     paths := strings.Split(dir[1:], "/")
 
@@ -114,9 +244,9 @@ func handleHttpRequest(w http.ResponseWriter, r *http.Request) {
 
     switch paths[0] {
         case "video":
-            handleContentRequest(w, r, dir[6:], filename) // Remove relative path /video/ -> /
+            handleContentRequest(w, r, dir[6:], basename, extension) // Remove relative path /video/ -> /
         default:
-            handleFileRequest(w, r, dir, filename)
+            handleFileRequest(w, r.URL.Path)
     }
 }
 
