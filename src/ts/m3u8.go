@@ -37,7 +37,7 @@ func CreateMainSubtitlesDescriptor(subtitles []mp4.TrackEntry) (s string) {
 			"DEFAULT=NO,FORCED=NO," +
 			"NAME=\"%s\"," +
 			"LANGUAGE=\"%s\"," +
-			"URI=\"%s\"\n",
+			"URI=\"subs/%s.m3u8\"\n",
 			sub.Lang,
 			sub.Lang,
 			sub.File)
@@ -61,11 +61,11 @@ func CreateMainVideoDescriptor(videos []mp4.TrackEntry) (s string) {
 			video.Config.Video.CodecInfo[2])
 
 		s += ",AUDIO=\"audio\",SUBTITLES=\"subs\""
-		/*if i == 0 {
+		if i == 0 {
 			s += ",AUTOSELECT=YES,DEFAULT=YES"
 		} else {
 			s += ",AUTOSELECT=YES,DEFAULT=NO"
-		}*/
+		}
 		s += "\n"
 		s += fmt.Sprintf("video/%d/index.m3u8\n", i)
 	}
@@ -85,6 +85,21 @@ func CreateMediaDescriptor(param string, extension string, fragmentDuration uint
 		s += fmt.Sprintf("#EXTINF:%d,\n", fragmentDuration)
 		s += fmt.Sprintf("%s%d.%s\n", param, i, extension)
 	}
+
+	s += "#EXT-X-ENDLIST"
+
+	return
+}
+
+func CreateMediaDescriptorSimple(param string, fragmentDuration uint32) (s string) {
+
+	s = "#EXTM3U\n"
+	s += fmt.Sprintf("#EXT-X-TARGETDURATION:%d\n", fragmentDuration)
+	s += "#EXT-X-VERSION:3\n"
+	s += "#EXT-X-MEDIA-SEQUENCE:0\n"
+
+	s += fmt.Sprintf("#EXTINF:%d,\n", fragmentDuration)
+	s += fmt.Sprintf("%s\n", param)
 
 	s += "#EXT-X-ENDLIST"
 

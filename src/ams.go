@@ -416,6 +416,20 @@ func treatTSRequest(splitDirs[] string, videoId string, videoIdPath string, w ht
 		return
 	}
 }
+
+func treatVTTRequest(splitDirs[] string, w http.ResponseWriter) {
+	w.Header().Set("Content-Type", "application/octet-stream")
+	originalPath := strings.Join(splitDirs[1:], "/")
+	html, err := httpServerLoadPage(originalPath)
+	if err != nil {
+		http.Error(w, `{ "status": "ERROR", "reason": "file not found" }`, http.StatusNotFound)
+		return
+	} else {
+		w.Header().Set("Content-Length", strconv.Itoa(len(html)))
+		w.Write(html)
+	}
+}
+
 func httpRootServer(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Credentials", "true")
@@ -452,6 +466,8 @@ func httpRootServer(w http.ResponseWriter, r *http.Request) {
 					treatM3U8Request(splitDirs[2:], videoIdPath, w)
 				case ".ts":
 					treatTSRequest(splitDirs[2:], videoId, videoIdPath, w)
+				case ".vtt":
+					treatVTTRequest(splitDirs[2:], w)
 				}
 			} else {
 				http.Error(w, `{ "status": "ERROR", "reason": "format is not supported" }`, http.StatusInternalServerError)

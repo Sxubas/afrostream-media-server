@@ -18,6 +18,7 @@ func TreatM3U8Request(splitDirs []string, jConfig mp4.JsonConfig, w http.Respons
 		mainDescriptor := CreateMainDescriptor(jConfig)
 		w.Write([]byte(mainDescriptor))
 		printDebug("Main Descriptor:", mainDescriptor)
+
 	} else if len(splitDirs) == 3 {
 
 		// Request sub descriptor
@@ -36,6 +37,7 @@ func TreatM3U8Request(splitDirs []string, jConfig mp4.JsonConfig, w http.Respons
 
 			// Create the descriptor
 			audioDescriptor := CreateMediaDescriptor("", "ts", jConfig.SegmentDuration, numberOfSegments)
+			audioDescriptor = CreateMediaDescriptor("", "ts", uint32(getTrackDuration(track)), 1)
 			printDebug("Audio Descriptor:", audioDescriptor)
 			w.Write([]byte(audioDescriptor))
 			break
@@ -60,7 +62,16 @@ func TreatM3U8Request(splitDirs []string, jConfig mp4.JsonConfig, w http.Respons
 			return errors.New("No media corresponding")
 		}
 	} else {
-		return errors.New("Incorrect url access")
+		if mediaType == "subs" {
+			originalPath := strings.Join(splitDirs[1:], "/")
+			originalPath = originalPath[:len(originalPath) - 5]
+			duration := uint32(getTrackDuration(jConfig.Tracks["video"][0]))
+			subtitlesDescriptor := CreateMediaDescriptorSimple(originalPath, duration)
+			printDebug("Subs Descriptor:", subtitlesDescriptor)
+			w.Write([]byte(subtitlesDescriptor))
+		} else {
+			return errors.New("Incorrect url access")
+		}
 	}
 
 	return nil
@@ -75,6 +86,10 @@ func findLanguageTrack(lang string, tracks []mp4.TrackEntry) (mp4.TrackEntry, er
 		}
 	}
 	return mp4.TrackEntry{}, errors.New("No language: " + lang)
+}
+
+func getTrackDuration(track mp4.TrackEntry) (float64) {
+	return float64(track.Config.Duration) / float64(track.Config.Timescale)
 }
 
 func getNumberOfSegments(track mp4.TrackEntry, jConfig mp4.JsonConfig) (int) {
@@ -103,6 +118,7 @@ func TreatTSRequest(splitDirs []string, jConfig mp4.JsonConfig, videoIdPath stri
 	var fragment []byte
 
 	mediaType := splitDirs[0]
+
 	fmt.Println("[ts] Asking ts file")
 	if len(splitDirs) != 3 {
 		 return errors.New("Incorrect url access")
@@ -120,7 +136,6 @@ func TreatTSRequest(splitDirs []string, jConfig mp4.JsonConfig, videoIdPath stri
 	}
 
 	var track mp4.TrackEntry
-
 	// Request sub descriptor
 	switch mediaType {
 	case "audio":
@@ -130,6 +145,7 @@ func TreatTSRequest(splitDirs []string, jConfig mp4.JsonConfig, videoIdPath stri
 		if err != nil {
 			return err
 		}
+
 		break
 	case "video":
 		// Get the id stream
@@ -152,7 +168,11 @@ func TreatTSRequest(splitDirs []string, jConfig mp4.JsonConfig, videoIdPath stri
 
 	filePath := "./" + track.File
 	if fragment == nil {
-		fragment = CreateHLSFragmentWithConf(*track.Config, filePath, uint32(fragmentNumber), jConfig.SegmentDuration)
+		if mediaType == "audio" {
+			fragment = CreateHLSFragmentWithConf(*track.Config, filePath, 1, uint32(getTrackDuration(track)))
+		} else {
+			fragment = CreateHLSFragmentWithConf(*track.Config, filePath, uint32(fragmentNumber), jConfig.SegmentDuration)
+		}
 	}
 
 	sizeToWrite := len(fragment)
