@@ -16,7 +16,7 @@ func createMainSubtitlesDescriptor(subtitles []mp4.TrackEntry, videoId string) (
 // Create audio variant list
 func createMainAudioDescriptor(audios []mp4.TrackEntry, videoId string) (s string) {
 	for _, audio := range audios {
-		s += fmt.Sprintf(`#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="audio",LANGUAGE="%s",NAME="%s",AUTOSELECT=YES,DEFAULT=YES,URI="%s_audio_%s_%d.hls"`, audio.Lang, audio.Lang, videoId, audio.Lang, audio.Bandwidth) + "\n"
+		s += fmt.Sprintf(`#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="audio",LANGUAGE="%s",NAME="audio_%s",AUTOSELECT=YES,DEFAULT=YES,URI="%s_audio_%s_%d.hls"`, audio.Lang, audio.Lang, videoId, audio.Lang, audio.Bandwidth) + "\n"
 	}
 	return
 }
@@ -35,7 +35,7 @@ func createMainVideoDescriptor(videos []mp4.TrackEntry, videoId string) (s strin
 			video.Config.Video.CodecInfo[1],
 			video.Config.Video.CodecInfo[2])
 
-		s += ",AUDIO=\"audio\",SUBTITLES=\"subs\""
+		//s += ",AUDIO=\"audio\",SUBTITLES=\"subs\""
 		if i == 0 {
 			s += ",AUTOSELECT=YES,DEFAULT=YES"
 		} else {
@@ -78,8 +78,8 @@ func CreateSubtitlesDescriptor(videoId string, trackLang string, trackBandwidth 
 
 func CreateMainDescriptor(jConf mp4.JsonConfig, videoId string) (s string) {
 	s = "#EXTM3U\n"
-	//s += createMainAudioDescriptor(jConf.Tracks["audio"], videoId)
 	s += createMainVideoDescriptor(jConf.Tracks["video"], videoId)
+	//s += createMainAudioDescriptor(jConf.Tracks["audio"], videoId)
 	s += createMainSubtitlesDescriptor(jConf.Tracks["subtitle"], videoId)
 	return
 }
