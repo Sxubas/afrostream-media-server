@@ -67,7 +67,7 @@ func getStreamSizeAndHeaderLength(stream StreamInfo, sample SampleInfo, sameTime
 	}
 
 	// Stream size with header
-	streamSize = 9 + headerLength + int(sample.size) // 9 bytes are bytes before the
+	streamSize = 9 + headerLength + int(sample.size) // 9 bytes are bytes before the header length
 
 	if stream.isVideo() {
 		// Add start slice code
@@ -122,17 +122,17 @@ func pushSampleHeader(stream StreamInfo, sample SampleInfo, sameTimeStamps bool,
 		flagPTSCode = 0x03
 	}
 
-	data.PushUInt(1, 24) 			// Packet start id code
+	data.PushUInt(1, 24) 						// Packet start id code
 
 	if stream.isVideo() {
-		data.PushUInt(224, 8) 			// Pes stream
-		data.PushUInt(0, 16) 		// Stream size
+		data.PushUInt(224, 8) 					// Pes stream
+		data.PushUInt(0, 16) 					// Stream size
 	} else {
-		data.PushUInt(192, 8) 			// Pes stream
-		data.PushUInt(uint32(streamSize - 6), 16)  // Stream size
+		data.PushUInt(192, 8) 					// Pes stream
+		data.PushUInt(uint32(streamSize - 6), 16)  	// Stream size - 6 bytes before
 	}
 
-	data.PushUInt(0x2, 2) 			// '10'
+	data.PushUInt(0x2, 2) 				// '10'
 	data.PushUInt(0, 2) 				// PES_Scrambling_control
 	data.PushUInt(0, 1) 				// PES_Priority
 	data.PushUInt(1, 1)				// data alignment indicator
