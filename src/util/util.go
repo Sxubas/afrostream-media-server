@@ -35,6 +35,8 @@ import (
     "errors"
     "path"
     "strings"
+
+    "mp4"
 )
 
 func SplitFilename(filename string) (string, string) {
@@ -51,5 +53,13 @@ func ParseBasename(filename string) (string, string, string, string, error) {
     }
 
     return strings.Join(splitted[:len(splitted) - 3], "_"), splitted[l - 3], splitted[l - 2], splitted[l - 1], nil
+}
+
+func NumberOfSegments(track mp4.TrackEntry, jConfig mp4.JsonConfig) (uint32) {
+	numberOfSegments := uint32(track.Config.Duration) / uint32(jConfig.SegmentDuration * track.Config.Timescale)
+	if int(track.Config.Duration) % int(jConfig.SegmentDuration * track.Config.Timescale) != 0 {
+		numberOfSegments++
+	}
+	return numberOfSegments
 }
 

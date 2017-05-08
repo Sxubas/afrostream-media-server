@@ -42,8 +42,10 @@ import (
     "syscall"
 
     "dash"
+    "hls"
     "logger"
     "mp4"
+    "ts"
     "util"
 )
 
@@ -90,9 +92,12 @@ func handleManifestRequest(w http.ResponseWriter, dir string, basename string, e
     switch extension {
         case ".mpd":
             manifest = dash.CreateDashManifest(jConfig, basename)
+            w.Header().Set("Content-Type", "application/dash+xml")
+        case ".m3u8":
+            manifest = hls.CreateMainDescriptor(jConfig, basename)
+            w.Header().Set("Content-Type", "application/x-mpegURL")
     }
 
-    w.Header().Set("Content-Type", "application/dash+xml")
     w.Header().Set("Content-Length", strconv.Itoa(len(manifest)))
     _, err = w.Write([]byte(manifest))
     if err != nil {
@@ -137,7 +142,7 @@ func handleMediaRequest(w http.ResponseWriter, dir string, basename string, exte
         if t.Lang == trackLang && t.Bandwidth == trackBandwidth {
             t.File = "/" + t.File
 
-            var content map[string][]interface{}
+            var b []byte
 
             // DASH : InitData or Fragment
             // HLS  : Playlist or Fragment
@@ -145,7 +150,8 @@ func handleMediaRequest(w http.ResponseWriter, dir string, basename string, exte
 
             switch extension {
                 case ".dash":
-                    content = mp4.CreateDashInitWithConf(*t.Config) // InitData
+                    content := mp4.CreateDashInitWithConf(*t.Config) // InitData
+                    b = mp4.MapToBytes(content)
                     w.Header().Set("Content-Type", "video/mp4")
                 case ".m4s":
                     if len(trackIds) !=2 {
@@ -162,14 +168,43 @@ func handleMediaRequest(w http.ResponseWriter, dir string, basename string, exte
                     }
                     var segmentNumber uint32
                     segmentNumber = uint32(num)
-                    content = mp4.CreateDashFragmentWithConf(*t.Config, t.File, segmentNumber, jConfig.SegmentDuration) // Fragment
+                    content := mp4.CreateDashFragmentWithConf(*t.Config, t.File, segmentNumber, jConfig.SegmentDuration) // Fragment
+                    b = mp4.MapToBytes(content)
                     w.Header().Set("Content-Type", "video/mp4")
+
+                case ".hls":
+                    switch trackType {
+                        case "video":
+                            segmentNumber := util.NumberOfSegments(t, jConfig)
+                            b = []byte(hls.CreateMediaDescriptor(jConfig.SegmentDuration, segmentNumber, trackName, trackType, trackLang, trackBandwidth))
+                        case "audio":
+                            b = []byte(hls.CreateMediaDescriptor(uint32(float64(t.Config.Duration) / float64(t.Config.Timescale)), 1, trackName, trackType, trackLang, trackBandwidth))
+                        case "subtitle":
+                            b = []byte(hls.CreateSubtitlesDescriptor(trackName, trackLang, trackBandwidth))
+                    }
+                    w.Header().Set("Content-Type", "application/x-mpegURL")
+                case ".ts":
+                    var num uint64
+                    num, err = strconv.ParseUint(trackIds[1], 10, 32)
+                    if err != nil {
+                        http.Error(w, `{ "status": "ERROR", "reason": "` + err.Error() + `" }`, http.StatusInternalServerError)
+                        logger.Error("%s", err.Error())
+                        return
+                    }
+                    var segmentNumber uint32
+                    segmentNumber = uint32(num)
+                    if trackType == "video" {
+                        b = ts.CreateHLSFragmentWithConf(*t.Config, t.File, segmentNumber, jConfig.SegmentDuration)
+                    } else {
+                        b = ts.CreateHLSFragmentWithConf(*t.Config, t.File, 1, uint32(float64(t.Config.Duration) / float64(t.Config.Timescale)))
+                    }
+                    w.Header().Set("Content-Type", "video/MP2T")
+
                 case ".vtt":
                     handleFileRequest(w, t.File, contentTypeFile)
                     return
             }
 
-            b := mp4.MapToBytes(content)
             w.Header().Set("Content-Length", strconv.Itoa(len(b)))
             _, err := w.Write(b)
             if err != nil {
@@ -195,14 +230,11 @@ func handleContentRequest(w http.ResponseWriter, dir string, basename string, ex
             handleMediaRequest(w, dir, basename, extension)
 
         case ".m3u8":
-            http.Error(w, `{ "status": "ERROR", "reason": "Not implemented yet" }`, http.StatusNotImplemented)
-            logger.Error("Not implemented yet")
+            handleManifestRequest(w, dir, basename, extension)
         case ".hls":
-            http.Error(w, `{ "status": "ERROR", "reason": "Not implemented yet" }`, http.StatusNotImplemented)
-            logger.Error("Not implemented yet")
+            handleMediaRequest(w, dir, basename, extension)
         case ".ts":
-            http.Error(w, `{ "status": "ERROR", "reason": "Not implemented yet" }`, http.StatusNotImplemented)
-            logger.Error("Not implemented yet")
+            handleMediaRequest(w, dir, basename, extension)
 
         case ".vtt":
             handleMediaRequest(w, dir, basename, extension)

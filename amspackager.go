@@ -190,7 +190,7 @@ func main() {
         t.Bandwidth = uint64(float64(mdat.Size) / (float64(mdhd.Duration) / float64(mdhd.Timescale)) * 8)
         t.File = mp4File.Filename
         t.Lang = mp4File.Language
-        t.Config = new(mp4.DashConfig)
+        t.Config = new(mp4.StreamConfig)
         t.Config.StszBoxOffset = stsz.Offset
         t.Config.StszBoxSize = stsz.Size
         t.Config.MdatBoxOffset = mdat.Offset
@@ -206,7 +206,7 @@ func main() {
         t.Config.HandlerType = hdlr.HandlerType
         t.Config.SampleDelta = stts.Entries[0].SampleDelta
         t.Config.MediaTime = elst.MediaTime
-        t.Config.Video = new(mp4.DashVideoEntry)
+        t.Config.Video = new(mp4.StreamVideoEntry)
         t.Config.Video.Width = avc1.Width
         t.Config.Video.Height = avc1.Height
         t.Config.Video.HorizontalResolution = avc1.HorizontalResolution
@@ -244,7 +244,7 @@ func main() {
         t.Bandwidth = uint64(float64(mdat.Size) / (float64(mdhd.Duration) / float64(mdhd.Timescale)) * 8)
         t.File = mp4File.Filename
         t.Lang = mp4File.Language
-        t.Config = new(mp4.DashConfig)
+        t.Config = new(mp4.StreamConfig)
         t.Config.StszBoxOffset = stsz.Offset
         t.Config.StszBoxSize = stsz.Size
         t.Config.MdatBoxOffset = mdat.Offset
@@ -260,7 +260,7 @@ func main() {
         t.Config.HandlerType = hdlr.HandlerType
         t.Config.SampleDelta = stts.Entries[0].SampleDelta
         t.Config.MediaTime = elst.MediaTime
-        t.Config.Audio = new(mp4.DashAudioEntry)
+        t.Config.Audio = new(mp4.StreamAudioEntry)
         t.Config.Audio.NumberOfChannels = mp4a.NumberOfChannels
         t.Config.Audio.SampleSize = mp4a.SampleSize
         t.Config.Audio.CompressionId = mp4a.CompressionId
