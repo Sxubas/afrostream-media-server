@@ -70,7 +70,7 @@ Move all mp4 files to a directory that you'll use for the HTTP media server docu
 
 	/usr/local/bin/amspackager -o video.json -d 8 -i video_h264-426x240-400.mp4 -i video_h264-640x360-800.mp4 -i video_h264-854x480-1600.mp4 -i video_h264-1280x720-3000.mp4 -i video_aac-128.mp4
 
-video.json and mp4/vtt files may be in different sub folders. Json file path will be used to access the content.
+Json file and mp4/vtt files may be in different sub folders of the media server. Json file path will be used to access the content.
 
 Output will be:
 
