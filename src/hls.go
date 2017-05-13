@@ -26,10 +26,13 @@ func launch() {
 	var jConfig mp4.JsonConfig
 	json.Unmarshal(data, &jConfig)
 
-	track := jConfig.Tracks["audio"][0]
-	fragment := ts.CreateHLSFragmentWithConf(*track.Config, track.File, 1, jConfig.SegmentDuration)
+	fragmentNumber := uint32(2)
+	track := jConfig.Tracks["video"][0]
+	fragment := ts.CreateHLSFragmentWithConf(*track.Config, track.File, fragmentNumber, jConfig.SegmentDuration)
+	fragmentDash := mp4.CreateDashFragmentWithConf(*track.Config, track.File, fragmentNumber, jConfig.SegmentDuration)
+	fb := mp4.MapToBytes(fragmentDash)
 	writeSample("sample.ts", fragment)
-
+	writeSample("samplet.fmp4", fb)
 }
 
 func printFragments(fragment []ts.Bytes, max int) {

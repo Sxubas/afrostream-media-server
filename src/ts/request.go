@@ -37,7 +37,6 @@ func TreatM3U8Request(splitDirs []string, jConfig mp4.JsonConfig, w http.Respons
 
 			// Create the descriptor
 			audioDescriptor := CreateMediaDescriptor("", "ts", jConfig.SegmentDuration, numberOfSegments)
-			audioDescriptor = CreateMediaDescriptor("", "ts", uint32(getTrackDuration(track)), 1)
 			printDebug("Audio Descriptor:", audioDescriptor)
 			w.Write([]byte(audioDescriptor))
 			break
@@ -168,11 +167,7 @@ func TreatTSRequest(splitDirs []string, jConfig mp4.JsonConfig, videoIdPath stri
 
 	filePath := "./" + track.File
 	if fragment == nil {
-		if mediaType == "audio" {
-			fragment = CreateHLSFragmentWithConf(*track.Config, filePath, 1, uint32(getTrackDuration(track)))
-		} else {
-			fragment = CreateHLSFragmentWithConf(*track.Config, filePath, uint32(fragmentNumber), jConfig.SegmentDuration)
-		}
+		fragment = CreateHLSFragmentWithConf(*track.Config, filePath, uint32(fragmentNumber), jConfig.SegmentDuration)
 	}
 
 	sizeToWrite := len(fragment)

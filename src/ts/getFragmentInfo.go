@@ -30,6 +30,8 @@ func registerStartAndEndOfFragment(stream StreamInfo, frag *FragmentInfo) {
 	sampleStart := uint32((((float64(frag.number) - 1) * float64(frag.duration)) * float64(stream.Timescale)) / float64(stream.SampleDelta))
 	sampleEnd := uint32(((float64(frag.number) * float64(frag.duration)) * float64(stream.Timescale)) / float64(stream.SampleDelta))
 
+
+	//fmt.Printf("%d %d", sampleStart, sampleEnd)
 	stss := stream.stss
 	stsz := stream.stsz
 	iFramesIndices := make([]uint32, 0)
@@ -64,6 +66,7 @@ func registerStartAndEndOfFragment(stream StreamInfo, frag *FragmentInfo) {
 	frag.sampleStart = sampleStart
 	frag.sampleEnd = sampleEnd
 	frag.iFramesIndices = iFramesIndices
+
 }
 
 func registerMdatOffset(stream *StreamInfo, frag *FragmentInfo) {
@@ -103,22 +106,20 @@ func registerCTSStart(stream StreamInfo, frag *FragmentInfo) {
 func registerDTSStart(stream StreamInfo, frag *FragmentInfo) {
 
 	var i uint32
-
+	frag.dts = 0
 	for i = 0; i < frag.sampleStart; i++ {
-		// Getting the number of ctts offset
-		if stream.compositionTimeOffset {
-			frag.dts += uint64(stream.stts.Entries[frag.sttsOffset].SampleDelta)
-			if frag.sttsSampleCount > 0 {
-				frag.sttsSampleCount--
-				if frag.sttsSampleCount == 0 {
-					frag.sttsOffset++
-				}
-			} else {
-				frag.sttsSampleCount = stream.stts.Entries[frag.sttsOffset].SampleCount - 1
-				if frag.sttsSampleCount == 0 {
-					frag.sttsOffset++
-				}
+		// Update Decoding time offset
+		if frag.sttsSampleCount > 0 {
+			frag.sttsSampleCount--
+			if frag.sttsSampleCount == 0 {
+				frag.sttsOffset++
+			}
+		} else {
+			frag.sttsSampleCount = stream.stts.Entries[frag.sttsOffset].SampleCount - 1
+			if frag.sttsSampleCount == 0 {
+				frag.sttsOffset++
 			}
 		}
+		frag.dts += uint64(stream.stts.Entries[frag.sttsOffset].SampleDelta)
 	}
 }
