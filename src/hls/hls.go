@@ -79,7 +79,7 @@ func CreateSubtitlesDescriptor(videoId string, trackLang string, trackBandwidth 
 func CreateMainDescriptor(jConf mp4.JsonConfig, videoId string) (s string) {
 	s = "#EXTM3U\n"
 	s += createMainVideoDescriptor(jConf.Tracks["video"], videoId)
-	//s += createMainAudioDescriptor(jConf.Tracks["audio"], videoId)
+	s += createMainAudioDescriptor(jConf.Tracks["audio"], videoId)
 	s += createMainSubtitlesDescriptor(jConf.Tracks["subtitle"], videoId)
 	return
 }

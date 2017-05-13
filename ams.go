@@ -180,7 +180,6 @@ func handleMediaRequest(w http.ResponseWriter, dir string, basename string, exte
                         case "audio":
                             segmentNumber := util.NumberOfSegments(t, jConfig)
                             b = []byte(hls.CreateMediaDescriptor(jConfig.SegmentDuration, segmentNumber, trackName, trackType, trackLang, trackBandwidth))
-                            //b = []byte(hls.CreateMediaDescriptor(uint32(float64(t.Config.Duration) / float64(t.Config.Timescale)), 1, trackName, trackType, trackLang, trackBandwidth))
                         case "subtitle":
                             b = []byte(hls.CreateSubtitlesDescriptor(trackName, trackLang, trackBandwidth))
                     }
@@ -195,11 +194,7 @@ func handleMediaRequest(w http.ResponseWriter, dir string, basename string, exte
                     }
                     var segmentNumber uint32
                     segmentNumber = uint32(num)
-                    if trackType == "video" {
-                        b = ts.CreateHLSFragmentWithConf(*t.Config, t.File, segmentNumber, jConfig.SegmentDuration)
-                    } else {
-                        b = ts.CreateHLSFragmentWithConf(*t.Config, t.File, 1, uint32(float64(t.Config.Duration) / float64(t.Config.Timescale)))
-                    }
+                    b = ts.CreateHLSFragmentWithConf(*t.Config, t.File, segmentNumber, jConfig.SegmentDuration)
                     w.Header().Set("Content-Type", "video/MP2T")
 
                 case ".vtt":
