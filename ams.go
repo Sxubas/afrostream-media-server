@@ -173,15 +173,11 @@ func handleMediaRequest(w http.ResponseWriter, dir string, basename string, exte
                     w.Header().Set("Content-Type", "video/mp4")
 
                 case ".hls":
-                    switch trackType {
-                        case "video":
-                            segmentNumber := util.NumberOfSegments(t, jConfig)
-                            b = []byte(hls.CreateMediaDescriptor(jConfig.SegmentDuration, segmentNumber, trackName, trackType, trackLang, trackBandwidth))
-                        case "audio":
-                            segmentNumber := util.NumberOfSegments(t, jConfig)
-                            b = []byte(hls.CreateMediaDescriptor(jConfig.SegmentDuration, segmentNumber, trackName, trackType, trackLang, trackBandwidth))
-                        case "subtitle":
-                            b = []byte(hls.CreateSubtitlesDescriptor(trackName, trackLang, trackBandwidth))
+                    if trackType == "subtitle" {
+                        b = []byte(hls.CreateSubtitlesDescriptor(trackName, trackLang, trackBandwidth))
+                    } else {
+                        segmentNumber := util.NumberOfSegments(t, jConfig)
+                        b = []byte(hls.CreateMediaDescriptor(jConfig.SegmentDuration, segmentNumber, trackName, trackType, trackLang, trackBandwidth))
                     }
                     w.Header().Set("Content-Type", "application/x-mpegURL")
                 case ".ts":
