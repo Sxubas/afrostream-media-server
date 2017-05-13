@@ -114,9 +114,6 @@ func main() {
     var flag_help bool
     flag.BoolVar(&flag_help, "help", false, "Display this help and exit")
 
-    var logfile string
-    flag.StringVar(&logfile, "log", "", "Log `filename` (stdout and stderr by default")
-
     var jsonFilename string
     flag.StringVar(&jsonFilename, "o", "video.json", "JSON output `filename`")
 
@@ -134,7 +131,8 @@ func main() {
         return
     }
 
-    logger.Init(logfile, logger.F_Debug)
+    logger.Init(logger.F_Debug)
+
     logger.Message("AMSPackager -- spebsd@gmail.com / Afrostream\n")
 
     var mp4FileSlice []inputFile

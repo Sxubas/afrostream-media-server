@@ -36,6 +36,7 @@ import (
     "flag"
     "io/ioutil"
     "net/http"
+    "os"
     "path"
     "strconv"
     "strings"
@@ -297,7 +298,7 @@ func main() {
         return
     }
 
-    logger.Init(logfile, logger.F_Debug)
+    logger.Init(logger.F_Debug)
 
     if directory == "" {
         logger.Message("Please specify the root directory for AMS web server\n")
@@ -309,6 +310,16 @@ func main() {
     if err != nil {
         logger.Message("Please run Afrostream Media Server as root, cannot chroot the root directory for security: %v", err)
         return
+    }
+
+    if logfile != "" {
+        file, err := os.OpenFile(logfile, os.O_WRONLY | os.O_CREATE | os.O_APPEND, 0644)
+        if err == nil {
+            logger.SetFile(file)
+            defer file.Close()
+        } else {
+            logger.Error("Couldn't create/open file %s : %s", logfile, err)
+        }
     }
 
     logger.Message("[*] Running Afrostream Media Server on port %s, press CTRL+C to exit", port)

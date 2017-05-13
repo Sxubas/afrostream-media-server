@@ -70,7 +70,12 @@ func Error(format string, v ...interface{}) {
     loggerError.Printf(prefixError + format, v ...)
 }
 
-func Init(filename string, flags int) {
+func SetFile(file *os.File) {
+    loggerInfo.SetOutput(file)
+    loggerError.SetOutput(file)
+}
+
+func Init(flags int) {
     flag = flags
 
     prefixInfo = "[ INFO ] "
@@ -79,19 +84,5 @@ func Init(filename string, flags int) {
 
     loggerInfo = log.New(os.Stdout, "", log.LstdFlags)
     loggerError = log.New(os.Stderr, "", log.LstdFlags)
-
-    if filename == "" {
-        return
-    }
-
-    file, err := os.OpenFile(filename, os.O_WRONLY | os.O_CREATE | os.O_APPEND, 0644)
-    if err != nil {
-        Error("Couldn't create/open file %s : %s", filename, err)
-    }
-
-    loggerInfo.SetOutput(file)
-    loggerError.SetOutput(file)
-
-    defer file.Close()
 }
 
