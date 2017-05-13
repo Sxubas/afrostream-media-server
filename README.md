@@ -6,8 +6,8 @@ Afrostream Media Server is a streaming software implemented in [Go](http://golan
 With Afrostream Media Server (AMS), you can stream MP4 audio/video files to various formats (like **DASH**, **HLS** and **Smooth Streaming**). Currently, the 0.1-alpha version only supports DASH, The implementation of HLS and Smooth Streaming is underway. The goal of this project is to provide an [Unified Streaming](http://www.unified-streaming.com/) like OpenSource software. Feel free to contact and/or join us to participate to this great project. AMS is considered as experimental.
 
 ### Demo
-For the demo, we use the [DASH IF Reference Client 1.5.1](http://dashif.org/reference/players/javascript/v1.5.1/samples/dash-if-reference-player/index.html).
-Click on the DASH IF Reference Client 1.5.1 link and enter the following URL:
+For the demo, we use the [DASH IF Reference Client 2.5.0](http://dashif.org/reference/players/javascript/v2.5.0/samples/dash-if-reference-player/index.html).
+Click on the DASH IF Reference Client 2.5.0 link and enter the following URL:
 
 	http://origin.afrostream.tv:8000/vod/demo_ams/Big_Buck_Bunny_1080p_surround_FrostWire.com.json/.mpd
 
@@ -70,6 +70,8 @@ Move all mp4 files to a directory that you'll use for the HTTP media server docu
 
 	/usr/local/bin/amspackager -o video.json -d 8 -i video_h264-426x240-400.mp4 -i video_h264-640x360-800.mp4 -i video_h264-854x480-1600.mp4 -i video_h264-1280x720-3000.mp4 -i video_aac-128.mp4
 
+video.json and mp4/vtt files may be in different sub folders. Json file path will be used to access the content.
+
 Output will be:
 
 	AMSPackager -- spebsd@gmail.com / Afrostream
@@ -91,9 +93,19 @@ Your video is prepared for AMS, so let's run Afrostream Media Server as root and
 
 Now, you can request URL
 
-	http://<ip_of_your_server>/video.json/.mpd
+for DASH
 
-with a dash player like [DASHJS](http://dashif.org/reference/players/javascript/v1.5.1/samples/dash-if-reference-player/index.html). That's all.
+	http://<ip_of_your_server>/video/<path_of_your_json_file>/video.mpd
+
+with a dash player like [DASHJS](http://dashif.org/reference/players/javascript/v2.5.0/samples/dash-if-reference-player/index.html). That's all.
+
+for HLS
+
+	http://<ip_of_your_server>/video/<path_of_your_json_file>/video.m3u8
+
+with an hls player like [HLSDEMO](http://streambox.fr/mse/hls.js-0.7.5/demo/). That's all.
+
+If you need more information, use -help with ams or amspackager.
 
 ## TODO
 <table>
@@ -107,7 +119,7 @@ with a dash player like [DASHJS](http://dashif.org/reference/players/javascript/
 </tr>
 <tr>
 <th>HLS on-the-fly</th>
-<th>No</th>
+<th>Yes</th>
 </tr>
 <tr>
 <th>Smooth Streaming on-the-fly</th>
