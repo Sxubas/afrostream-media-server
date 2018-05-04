@@ -1,3 +1,6 @@
+This version of AMS add support HLS protocol.
+
+
 Afrostream Media Server (AMS)
 ===
 Afrostream Media Server is a streaming software implemented in [Go](http://golang.org) under BSD Licence.
