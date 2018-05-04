@@ -1,4 +1,4 @@
-This version of AMS add support HLS protocol.
+This version of AMS add support for HLS protocol.
 
 
 Afrostream Media Server (AMS)
