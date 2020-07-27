@@ -166,7 +166,7 @@ func handleMediaRequest(w http.ResponseWriter, dir string, basename string, exte
 				}
 				var segmentNumber uint32
 				segmentNumber = uint32(num)
-				content := mp4.CreateDashFragmentWithConf(*t.Config, t.File, segmentNumber, jConfig.SegmentDuration) // Fragment
+				content := mp4.CreateDashFragmentFromFileWithConf(*t.Config, t.File, segmentNumber, jConfig.SegmentDuration) // Fragment
 				b = mp4.MapToBytes(content)
 				w.Header().Set("Content-Type", "video/mp4")
 
