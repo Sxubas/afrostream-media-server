@@ -1,8 +1,9 @@
 package hls
 
 import (
-	"mp4"
 	"fmt"
+
+	"github.com/Sxubas/afrostream-media-server/src/mp4"
 )
 
 // Create subtitles variant list
@@ -25,8 +26,8 @@ func createMainAudioDescriptor(audios []mp4.TrackEntry, videoId string) (s strin
 // Variant list with different video can be added
 func createMainVideoDescriptor(videos []mp4.TrackEntry, videoId string) (s string) {
 	for i, video := range videos {
-		s += fmt.Sprintf("#EXT-X-STREAM-INF:PROGRAM-ID=1," +
-			"BANDWIDTH=%d,RESOLUTION=%dx%d," +
+		s += fmt.Sprintf("#EXT-X-STREAM-INF:PROGRAM-ID=1,"+
+			"BANDWIDTH=%d,RESOLUTION=%dx%d,"+
 			"CODECS=\"avc1.%.2x%.2x%.2x,mp4a.40.2\"",
 			video.Bandwidth,
 			video.Config.Video.Width,
@@ -54,7 +55,7 @@ func CreateMediaDescriptor(fragmentDuration uint32, numberOfSegment uint32, vide
 	s += "#EXT-X-VERSION:3\n"
 	s += "#EXT-X-MEDIA-SEQUENCE:0\n"
 
-    var i uint32
+	var i uint32
 	for i = 1; i <= numberOfSegment; i++ {
 		s += fmt.Sprintf("#EXTINF:%d,\n", fragmentDuration)
 		s += fmt.Sprintf("%s_%s_%s_%d-%d.ts\n", videoId, trackType, trackLang, trackBandwidth, i)
@@ -83,4 +84,3 @@ func CreateMainDescriptor(jConf mp4.JsonConfig, videoId string) (s string) {
 	s += createMainSubtitlesDescriptor(jConf.Tracks["subtitle"], videoId)
 	return
 }
-

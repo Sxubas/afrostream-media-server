@@ -1,9 +1,8 @@
-This version of AMS add support for HLS protocol.
-
-
 Afrostream Media Server (AMS)
 ===
 Afrostream Media Server is a streaming software implemented in [Go](http://golang.org) under BSD Licence.
+
+** This fork aims to fix the packaging of this project to be able to use its code in other projects. **
 
 ### Synopsis
 With Afrostream Media Server (AMS), you can stream MP4 audio/video files to various formats (like **DASH**, **HLS** and **Smooth Streaming**). Currently, the 0.1-alpha version only supports DASH, The implementation of HLS and Smooth Streaming is underway. The goal of this project is to provide an [Unified Streaming](http://www.unified-streaming.com/) like OpenSource software. Feel free to contact and/or join us to participate to this great project. AMS is considered as experimental.
@@ -78,15 +77,15 @@ Json file and mp4/vtt files may be in different sub folders of the media server.
 Output will be:
 
 	AMSPackager -- spebsd@gmail.com / Afrostream
-	
+
 	-- Parsing file='video_h264-426x240-400.mp4' language='eng'
 	-- Parsing file='video_h264-640x360-800.mp4' language='eng'
 	-- Parsing file='video_h264-854x480-1600.mp4' language='eng'
 	-- Parsing file='video_h264-1280x720-3000.mp4' language='eng'
 	-- Parsing file='video_aac-128.mp4' language='eng'
-	
+
 	-- Creating package file 'video.json'
-	
+
 	All files has been packaged successfully
 
 If you have vtt subtitles files, you can add them with -i video.en.vtt -l eng -i video.fr.vtt -l fra ...

@@ -1,6 +1,6 @@
 package ts
 
-import "mp4"
+import "github.com/Sxubas/afrostream-media-server/src/mp4"
 
 type StreamInfo struct {
 	mp4.StreamConfig
@@ -22,13 +22,13 @@ type StreamInfo struct {
 	ClockScaled float64
 
 	// Number of bytes describing the nal length (e.g. 4)
-	nalLengthSize		  uint32
+	nalLengthSize uint32
 }
 
-func (info StreamInfo) isVideo() (bool) {
+func (info StreamInfo) isVideo() bool {
 	return info.Type == "video"
 }
 
-func (info StreamInfo) isAudio() (bool) {
+func (info StreamInfo) isAudio() bool {
 	return info.Type == "audio"
 }

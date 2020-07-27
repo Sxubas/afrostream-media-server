@@ -1,11 +1,10 @@
 package ts
 
 import (
-	"mp4"
+	"github.com/Sxubas/afrostream-media-server/src/mp4"
 )
 
-
-func CreateHLSFragmentWithConf(sConf mp4.StreamConfig, filename string, fragmentNumber uint32, fragmentDuration uint32) ([]byte) {
+func CreateHLSFragmentWithConf(sConf mp4.StreamConfig, filename string, fragmentNumber uint32, fragmentDuration uint32) []byte {
 
 	if fragmentNumber == 0 {
 		panic("Fragment number incorrect")

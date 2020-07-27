@@ -4,7 +4,8 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"crc"
+
+	"github.com/Sxubas/afrostream-media-server/src/crc"
 )
 
 type Data struct {
@@ -13,11 +14,11 @@ type Data struct {
 	Offset int
 }
 
-func (data *Data) ToBytes() (Data) {
+func (data *Data) ToBytes() Data {
 	return *data
 }
 
-func (data *Data) Size() (int) {
+func (data *Data) Size() int {
 	return len(data.Data)
 }
 
@@ -64,7 +65,7 @@ func (data *Data) AllocBytes(byteSize int) {
 
 // Alloc data at the end of memory
 func (data *Data) AllocBits(bitSize int) {
-	data.AllocBytes(bitSize/8)
+	data.AllocBytes(bitSize / 8)
 }
 
 // Push object on Data
@@ -77,7 +78,7 @@ func (data *Data) PushObj(object interface{}, objectSize int) {
 	binary.Write(&buf, binary.BigEndian, object)
 	objectBytes := buf.Bytes()
 
-	if len(objectBytes) * 8 < objectSize {
+	if len(objectBytes)*8 < objectSize {
 
 		switch object.(type) {
 		case int:
@@ -102,7 +103,7 @@ func (data *Data) PushAll(bytes []byte) {
 }
 
 func (data *Data) PushData(dataPushed Data) {
-	data.Push(dataPushed.Data, len(dataPushed.Data) * 8)
+	data.Push(dataPushed.Data, len(dataPushed.Data)*8)
 }
 
 // Write bytes on Data
@@ -131,7 +132,7 @@ func (data *Data) Push(bytes []byte, sizeToPush int) {
 		writtenByte := GetByte(bytes,
 			lastBitIndex,
 			firstBitIndex)
-		writtenByte = writtenByte << byte(residualBits - pushedBits)
+		writtenByte = writtenByte << byte(residualBits-pushedBits)
 
 		// Write byte on Data
 		data.WriteOR(writtenByte)
@@ -168,7 +169,7 @@ func (data *Data) FillRemaining(pushed byte) {
 }
 
 func (data *Data) FillTo(pushed byte, offsetBitAddress int) {
-	if data.Offset >= len(data.Data) * 8 {
+	if data.Offset >= len(data.Data)*8 {
 		return
 	}
 
@@ -197,7 +198,7 @@ func GetByte(data []byte, lastBitIndex int, firstBitIndex int) byte {
 
 	lastByteIndex := lastBitIndex / 8
 	firstByteIndex := firstBitIndexIncluded / 8
-	lastIndexInByte := byte(lastBitIndex% 8)
+	lastIndexInByte := byte(lastBitIndex % 8)
 	firstIndexInByte := byte(firstBitIndexIncluded) % 8
 
 	// If start and end are on the same byte
@@ -262,7 +263,7 @@ func (data *Data) GetSpaceLeftInBits() int {
 
 // Get the number of bytes remaining on memory
 func (data *Data) GetSpaceLeftInByte() int {
-	return (len(data.Data)*8 - data.Offset)/8
+	return (len(data.Data)*8 - data.Offset) / 8
 }
 
 // Create Data with offset support
@@ -300,15 +301,14 @@ func (data Data) PrintHexFull() {
 	}
 }
 
-
 func (data *Data) PrintSplittedNal() {
 	lastIndex := 0
 	nal := 0
 
-	for i := 0; i < len(data.Data) - 2; i++ {
+	for i := 0; i < len(data.Data)-2; i++ {
 		if data.Data[i] == byte(0) {
-			if data.Data[i + 1] == byte(0) {
-				if data.Data[i + 2] == byte(1) {
+			if data.Data[i+1] == byte(0) {
+				if data.Data[i+2] == byte(1) {
 					temp := Data{}
 					temp.Data = data.Data[lastIndex:i]
 					temp.Offset = i - lastIndex
@@ -337,10 +337,10 @@ func (data *Data) PrintSplittedNal() {
 func (data *Data) GetNalNumber() (nal int) {
 
 	nal = 0
-	for i := 0; i < len(data.Data) - 2; i++ {
+	for i := 0; i < len(data.Data)-2; i++ {
 		if data.Data[i] == byte(0) {
-			if data.Data[i + 1] == byte(0) {
-				if data.Data[i + 2] == byte(1) {
+			if data.Data[i+1] == byte(0) {
+				if data.Data[i+2] == byte(1) {
 					nal++
 				}
 			}
@@ -349,12 +349,9 @@ func (data *Data) GetNalNumber() (nal int) {
 	return
 }
 
-
-
-
 func PrintLine(format string, start uint32, size uint32, bytes []byte) {
 	for w := 0; w < 2 && start < size; w++ {
-		endMax := Min32(start + 8, size)
+		endMax := Min32(start+8, size)
 		fmt.Printf(format, bytes[start:endMax])
 		start += 8
 	}
@@ -369,7 +366,7 @@ func (data *Data) GenerateCRC32() uint32 {
 	return crc.ComputeCRC32MPEG(data.Data)
 }
 
-func DataB(bytes []byte) (data *Data){
+func DataB(bytes []byte) (data *Data) {
 	data = new(Data)
 	data.Data = bytes
 	data.Offset = len(bytes)

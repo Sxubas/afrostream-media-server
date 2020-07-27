@@ -1,12 +1,13 @@
 package ts
 
 import (
-	"mp4"
 	"time"
+
+	"github.com/Sxubas/afrostream-media-server/src/mp4"
 )
 
 // Analyse the stream and get main information
-func AnalyseStream(sConf mp4.StreamConfig, filename string) (streamInfo *StreamInfo){
+func AnalyseStream(sConf mp4.StreamConfig, filename string) (streamInfo *StreamInfo) {
 
 	streamInfo = new(StreamInfo)
 
@@ -83,7 +84,7 @@ func registerInformation(streamInfo *StreamInfo) {
 
 		// Retrieve information for nal segmentation
 		// Use the avcC box: NalUnitLengthSize minus one + 1
-		streamInfo.nalLengthSize = uint32(streamInfo.avcC.NalUnitSize & 0x03 + 1)
+		streamInfo.nalLengthSize = uint32(streamInfo.avcC.NalUnitSize&0x03 + 1)
 	} else {
 		streamInfo.PID = 256
 		streamInfo.streamType = 15 //127
