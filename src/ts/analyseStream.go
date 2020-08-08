@@ -27,7 +27,10 @@ func AnalyseStream(sConf mp4.StreamConfig, filename string) (streamInfo *StreamI
 func loadBoxes(info *StreamInfo) {
 
 	// Create the container to load mp4File content
-	mp4File := mp4.ReadMainBoxes(info.filename, info.StreamConfig)
+	mp4File, err := mp4.ReadMainBoxes(info.filename, info.StreamConfig)
+	if err != nil {
+		panic(err)
+	}
 
 	// Get data
 	// MDAT

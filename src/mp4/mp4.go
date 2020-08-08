@@ -527,11 +527,11 @@ func (parent ParentBox) Bytes() (data []byte) {
 }
 
 // Decode FTYP Box
-func readFtypBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 map[string][]interface{}) {
+func readFtypBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 map[string][]interface{}) error {
 	data := make([]byte, size)
 	_, err := r.Read(data)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	var ftyp FtypBox
 	ftyp.Size = size
@@ -546,6 +546,8 @@ func readFtypBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 ma
 	}
 	addBox(mp4, boxPath, ftyp)
 	dumpBox(boxPath, ftyp)
+
+	return nil
 }
 
 func (ftyp FtypBox) Bytes() (data []byte) {
@@ -564,11 +566,11 @@ func (ftyp FtypBox) Bytes() (data []byte) {
 	return
 }
 
-func readStypBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 map[string][]interface{}) {
+func readStypBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 map[string][]interface{}) error {
 	data := make([]byte, size)
 	_, err := r.Read(data)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	var styp StypBox
 	styp.Size = size
@@ -583,6 +585,8 @@ func readStypBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 ma
 	}
 	addBox(mp4, boxPath, styp)
 	dumpBox(boxPath, styp)
+
+	return nil
 }
 
 func (styp StypBox) Bytes() (data []byte) {
@@ -602,16 +606,18 @@ func (styp StypBox) Bytes() (data []byte) {
 }
 
 // Decode FREE Box
-func readFreeBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 map[string][]interface{}) {
+func readFreeBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 map[string][]interface{}) error {
 	var free FreeBox
 	free.Size = size
 	free.Data = make([]byte, size)
 	_, err := r.Read(free.Data)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	addBox(mp4, boxPath, free)
 	dumpBox(boxPath, free)
+
+	return nil
 }
 
 func (free FreeBox) Bytes() (data []byte) {
@@ -624,14 +630,14 @@ func (free FreeBox) Bytes() (data []byte) {
 	return
 }
 
-func readTkhdBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 map[string][]interface{}) {
+func readTkhdBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 map[string][]interface{}) error {
 	var tkhd TkhdBox
 	var offset uint32
 	offset = 4
 	data := make([]byte, size)
 	_, err := r.Read(data)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	tkhd.Size = size
@@ -640,7 +646,7 @@ func readTkhdBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 ma
 		if debugMode {
 			log.Printf("ERROR: Unknown %s box version", boxPath)
 		}
-		return
+		return nil
 	}
 	copy(tkhd.Flags[:], data[1:4])
 	if tkhd.Version == 0 {
@@ -684,6 +690,8 @@ func readTkhdBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 ma
 	tkhd.Height = binary.BigEndian.Uint32(data[offset : offset+4])
 	addBox(mp4, boxPath, tkhd)
 	dumpBox(boxPath, tkhd)
+
+	return nil
 }
 
 func (tkhd TkhdBox) Bytes() (data []byte) {
@@ -739,12 +747,12 @@ func (tkhd TkhdBox) Bytes() (data []byte) {
 	return
 }
 
-func readElstBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 map[string][]interface{}) {
+func readElstBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 map[string][]interface{}) error {
 	var offset uint32
 	data := make([]byte, size)
 	_, err := r.Read(data)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	var elst ElstBox
@@ -753,7 +761,7 @@ func readElstBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 ma
 		if debugMode {
 			log.Printf("ERROR: Unknown %s box version", boxPath)
 		}
-		return
+		return nil
 	}
 	copy(elst.Reserved[:], data[1:4])
 	elst.EntryCount = binary.BigEndian.Uint32(data[4:8])
@@ -778,16 +786,18 @@ func readElstBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 ma
 	}
 	addBox(mp4, boxPath, elst)
 	dumpBox(boxPath, elst)
+
+	return nil
 }
 
-func readMdhdBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 map[string][]interface{}) {
+func readMdhdBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 map[string][]interface{}) error {
 	var mdhd MdhdBox
 	var offset uint32
 	offset = 4
 	data := make([]byte, size)
 	_, err := r.Read(data)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	mdhd.Size = size
@@ -796,7 +806,7 @@ func readMdhdBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 ma
 		if debugMode {
 			log.Printf("ERROR: Unknown %s box version", boxPath)
 		}
-		return
+		return nil
 	}
 	copy(mdhd.Reserved[:], data[1:4])
 	if mdhd.Version == 0 {
@@ -824,6 +834,8 @@ func readMdhdBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 ma
 	mdhd.PreDefined = binary.BigEndian.Uint16(data[offset : offset+2])
 	addBox(mp4, boxPath, mdhd)
 	dumpBox(boxPath, mdhd)
+
+	return nil
 }
 
 func (mdhd MdhdBox) Bytes() (data []byte) {
@@ -863,11 +875,11 @@ func (mdhd MdhdBox) Bytes() (data []byte) {
 	return
 }
 
-func readHdlrBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 map[string][]interface{}) {
+func readHdlrBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 map[string][]interface{}) error {
 	data := make([]byte, size)
 	_, err := r.Read(data)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	var hdlr HdlrBox
@@ -883,6 +895,8 @@ func readHdlrBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 ma
 	hdlr.Name = data[24:]
 	addBox(mp4, boxPath, hdlr)
 	dumpBox(boxPath, hdlr)
+
+	return nil
 }
 
 func (hdlr HdlrBox) Bytes() (data []byte) {
@@ -903,11 +917,11 @@ func (hdlr HdlrBox) Bytes() (data []byte) {
 	return
 }
 
-func readVmhdBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 map[string][]interface{}) {
+func readVmhdBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 map[string][]interface{}) error {
 	data := make([]byte, size)
 	_, err := r.Read(data)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	var vmhd VmhdBox
 	vmhd.Size = size
@@ -919,6 +933,8 @@ func readVmhdBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 ma
 	}
 	addBox(mp4, boxPath, vmhd)
 	dumpBox(boxPath, vmhd)
+
+	return nil
 }
 
 func (vmhd VmhdBox) Bytes() (data []byte) {
@@ -937,11 +953,11 @@ func (vmhd VmhdBox) Bytes() (data []byte) {
 	return
 }
 
-func readSmhdBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 map[string][]interface{}) {
+func readSmhdBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 map[string][]interface{}) error {
 	data := make([]byte, size)
 	_, err := r.Read(data)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	var smhd SmhdBox
 	smhd.Size = size
@@ -951,6 +967,8 @@ func readSmhdBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 ma
 	smhd.Reserved2 = binary.BigEndian.Uint16(data[6:8])
 	addBox(mp4, boxPath, smhd)
 	dumpBox(boxPath, smhd)
+
+	return nil
 }
 
 func (smhd SmhdBox) Bytes() (data []byte) {
@@ -967,11 +985,11 @@ func (smhd SmhdBox) Bytes() (data []byte) {
 	return
 }
 
-func readHmhdBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 map[string][]interface{}) {
+func readHmhdBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 map[string][]interface{}) error {
 	data := make([]byte, size)
 	_, err := r.Read(data)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	var hmhd HmhdBox
 	hmhd.Version = data[0]
@@ -983,14 +1001,16 @@ func readHmhdBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 ma
 	hmhd.Reserved2 = binary.BigEndian.Uint32(data[16:20])
 	addBox(mp4, boxPath, hmhd)
 	dumpBox(boxPath, hmhd)
+
+	return nil
 }
 
-func readDrefBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 map[string][]interface{}) {
+func readDrefBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 map[string][]interface{}) error {
 	var offset uint32
 	data := make([]byte, size)
 	_, err := r.Read(data)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	var dref DrefBox
 	dref.Size = size
@@ -1043,6 +1063,8 @@ func readDrefBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 ma
 	}
 	addBox(mp4, boxPath, dref)
 	dumpBox(boxPath, dref)
+
+	return nil
 }
 
 func (dref DrefBox) Bytes() (data []byte) {
@@ -1080,14 +1102,14 @@ func (dref DrefBox) Bytes() (data []byte) {
 	return
 }
 
-func readMvhdBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 map[string][]interface{}) {
+func readMvhdBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 map[string][]interface{}) error {
 	var mvhd MvhdBox
 	var offset uint32
 
 	data := make([]byte, size)
 	_, err := r.Read(data)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	mvhd.Size = size
@@ -1096,7 +1118,7 @@ func readMvhdBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 ma
 		if debugMode {
 			log.Printf("ERROR: Unknown %s box version", boxPath)
 		}
-		return
+		return nil
 	}
 	copy(mvhd.Reserved[:], data[1:4])
 	offset = 4
@@ -1139,6 +1161,8 @@ func readMvhdBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 ma
 	mvhd.NextTrackID = binary.BigEndian.Uint32(data[offset : offset+4])
 	addBox(mp4, boxPath, mvhd)
 	dumpBox(boxPath, mvhd)
+
+	return nil
 }
 
 func (mvhd MvhdBox) Bytes() (data []byte) {
@@ -1192,11 +1216,11 @@ func (mvhd MvhdBox) Bytes() (data []byte) {
 	return
 }
 
-func readStsdBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 map[string][]interface{}) {
+func readStsdBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 map[string][]interface{}) error {
 	data := make([]byte, 8)
 	_, err := r.Read(data)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	var stsd StsdBox
@@ -1208,9 +1232,7 @@ func readStsdBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 ma
 	addBox(mp4, boxPath, stsd)
 	dumpBox(boxPath, stsd)
 
-	readBoxes(r, size-8, level+1, boxPath, mp4)
-
-	return
+	return readBoxes(r, size-8, level+1, boxPath, mp4)
 }
 
 func (stsd StsdBox) Bytes() (data []byte) {
@@ -1226,11 +1248,11 @@ func (stsd StsdBox) Bytes() (data []byte) {
 	return
 }
 
-func readMp4aBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 map[string][]interface{}) {
+func readMp4aBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 map[string][]interface{}) error {
 	data := make([]byte, 28)
 	_, err := r.Read(data)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	var mp4a Mp4aBox
@@ -1249,9 +1271,7 @@ func readMp4aBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 ma
 	addBox(mp4, boxPath, mp4a)
 	dumpBox(boxPath, mp4a)
 
-	readBoxes(r, size-28, level+1, boxPath, mp4)
-
-	return
+	return readBoxes(r, size-28, level+1, boxPath, mp4)
 }
 
 func (mp4a Mp4aBox) Bytes() (data []byte) {
@@ -1274,11 +1294,11 @@ func (mp4a Mp4aBox) Bytes() (data []byte) {
 	return
 }
 
-func readEsdsBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 map[string][]interface{}) {
+func readEsdsBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 map[string][]interface{}) error {
 	data := make([]byte, size)
 	_, err := r.Read(data)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	var esds EsdsBox
@@ -1289,7 +1309,7 @@ func readEsdsBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 ma
 	addBox(mp4, boxPath, esds)
 	dumpBox(boxPath, esds)
 
-	return
+	return nil
 }
 
 func (esds EsdsBox) Bytes() (data []byte) {
@@ -1304,11 +1324,11 @@ func (esds EsdsBox) Bytes() (data []byte) {
 	return
 }
 
-func readAvc1Box(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 map[string][]interface{}) {
+func readAvc1Box(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 map[string][]interface{}) error {
 	data := make([]byte, 78)
 	_, err := r.Read(data)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	var avc1 Avc1Box
@@ -1333,9 +1353,7 @@ func readAvc1Box(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 ma
 	addBox(mp4, boxPath, avc1)
 	dumpBox(boxPath, avc1)
 
-	readBoxes(r, size-78, level+1, boxPath, mp4)
-
-	return
+	return readBoxes(r, size-78, level+1, boxPath, mp4)
 }
 
 func (avc1 Avc1Box) Bytes() (data []byte) {
@@ -1364,12 +1382,12 @@ func (avc1 Avc1Box) Bytes() (data []byte) {
 	return
 }
 
-func readAvcCBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 map[string][]interface{}) {
+func readAvcCBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 map[string][]interface{}) error {
 	var offset uint32
 	data := make([]byte, size)
 	_, err := r.Read(data)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	var avcC AvcCBox
@@ -1393,7 +1411,7 @@ func readAvcCBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 ma
 	addBox(mp4, boxPath, avcC)
 	dumpBox(boxPath, avcC)
 
-	return
+	return nil
 }
 
 func (avcC AvcCBox) Bytes() (data []byte) {
@@ -1422,11 +1440,11 @@ func (avcC AvcCBox) Bytes() (data []byte) {
 	return
 }
 
-func readBtrtBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 map[string][]interface{}) {
+func readBtrtBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 map[string][]interface{}) error {
 	data := make([]byte, size)
 	_, err := r.Read(data)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	var btrt BtrtBox
@@ -1438,7 +1456,7 @@ func readBtrtBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 ma
 	addBox(mp4, boxPath, btrt)
 	dumpBox(boxPath, btrt)
 
-	return
+	return nil
 }
 
 func (btrt BtrtBox) Bytes() (data []byte) {
@@ -1454,11 +1472,11 @@ func (btrt BtrtBox) Bytes() (data []byte) {
 	return
 }
 
-func readStscBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 map[string][]interface{}) {
+func readStscBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 map[string][]interface{}) error {
 	data := make([]byte, size)
 	_, err := r.Read(data)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	var stsc StscBox
@@ -1475,6 +1493,8 @@ func readStscBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 ma
 	}
 	addBox(mp4, boxPath, stsc)
 	dumpBox(boxPath, stsc)
+
+	return nil
 }
 
 func (stsc StscBox) Bytes() (data []byte) {
@@ -1500,13 +1520,18 @@ func (stsc StscBox) Bytes() (data []byte) {
 	return
 }
 
-func readStszBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 map[string][]interface{}) {
+func readStszBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 map[string][]interface{}) error {
 	var stsz StszBox
-	stsz.Offset, _ = r.Seek(0, os.SEEK_CUR)
-	data := make([]byte, size)
-	_, err := r.Read(data)
+	var err error
+	stsz.Offset, err = r.Seek(0, os.SEEK_CUR)
 	if err != nil {
-		panic(err)
+		return err
+	}
+
+	data := make([]byte, size)
+	_, err = r.Read(data)
+	if err != nil {
+		return err
 	}
 
 	stsz.Size = size
@@ -1527,6 +1552,8 @@ func readStszBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 ma
 	}
 	addBox(mp4, boxPath, stsz)
 	dumpBox(boxPath, stsz)
+
+	return nil
 }
 
 func (stsz StszBox) Bytes() (data []byte) {
@@ -1556,12 +1583,12 @@ func (stsz StszBox) Bytes() (data []byte) {
 	return
 }
 
-func readSdtpBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 map[string][]interface{}) {
+func readSdtpBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 map[string][]interface{}) error {
 	var sdtp SdtpBox
 	data := make([]byte, size)
 	_, err := r.Read(data)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	sdtp.Size = size
@@ -1578,7 +1605,7 @@ func readSdtpBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 ma
 		sdtp.SampleCount = 0
 	}
 
-	return
+	return nil
 }
 
 func (sdtp SdtpBox) Bytes() (data []byte) {
@@ -1596,11 +1623,11 @@ func (sdtp SdtpBox) Bytes() (data []byte) {
 	return
 }
 
-func readStcoBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 map[string][]interface{}) {
+func readStcoBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 map[string][]interface{}) error {
 	data := make([]byte, size)
 	_, err := r.Read(data)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	var stco StcoBox
 	stco.Size = size
@@ -1616,6 +1643,8 @@ func readStcoBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 ma
 	}
 	addBox(mp4, boxPath, stco)
 	dumpBox(boxPath, stco)
+
+	return nil
 }
 
 func (stco StcoBox) Bytes() (data []byte) {
@@ -1639,11 +1668,11 @@ func (stco StcoBox) Bytes() (data []byte) {
 	return
 }
 
-func readSttsBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 map[string][]interface{}) {
+func readSttsBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 map[string][]interface{}) error {
 	data := make([]byte, size)
 	_, err := r.Read(data)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	var stts SttsBox
@@ -1659,6 +1688,8 @@ func readSttsBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 ma
 	}
 	addBox(mp4, boxPath, stts)
 	dumpBox(boxPath, stts)
+
+	return nil
 }
 
 func (stts SttsBox) Bytes() (data []byte) {
@@ -1682,13 +1713,13 @@ func (stts SttsBox) Bytes() (data []byte) {
 	return
 }
 
-func readCttsBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 map[string][]interface{}) {
+func readCttsBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 map[string][]interface{}) error {
 	var ctts CttsBox
 	ctts.Offset, _ = r.Seek(0, os.SEEK_CUR)
 	data := make([]byte, size)
 	_, err := r.Read(data)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	ctts.Size = size
@@ -1703,6 +1734,8 @@ func readCttsBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 ma
 	}
 	addBox(mp4, boxPath, ctts)
 	dumpBox(boxPath, ctts)
+
+	return nil
 }
 
 func (ctts CttsBox) Bytes() (data []byte) {
@@ -1726,13 +1759,13 @@ func (ctts CttsBox) Bytes() (data []byte) {
 	return
 }
 
-func readStssBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 map[string][]interface{}) {
+func readStssBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 map[string][]interface{}) error {
 	var stss StssBox
 	stss.Offset, _ = r.Seek(0, os.SEEK_CUR)
 	data := make([]byte, size)
 	_, err := r.Read(data)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	stss.Size = size
@@ -1750,6 +1783,8 @@ func readStssBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 ma
 	}
 	addBox(mp4, boxPath, stss)
 	dumpBox(boxPath, stss)
+
+	return nil
 }
 
 func (stss StssBox) Bytes() (data []byte) {
@@ -1773,12 +1808,12 @@ func (stss StssBox) Bytes() (data []byte) {
 	return
 }
 
-func readMehdBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 map[string][]interface{}) {
+func readMehdBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 map[string][]interface{}) error {
 	var offset uint32
 	data := make([]byte, size)
 	_, err := r.Read(data)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	var mehd MehdBox
 	mehd.Size = size
@@ -1787,7 +1822,7 @@ func readMehdBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 ma
 		if debugMode {
 			log.Printf("ERROR: Unknown %s box version", boxPath)
 		}
-		return
+		return nil
 	}
 	copy(mehd.Reserved[:], data[1:4])
 	offset = 4
@@ -1798,6 +1833,8 @@ func readMehdBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 ma
 	}
 	addBox(mp4, boxPath, mehd)
 	dumpBox(boxPath, mehd)
+
+	return nil
 }
 
 func (mehd MehdBox) Bytes() (data []byte) {
@@ -1819,11 +1856,11 @@ func (mehd MehdBox) Bytes() (data []byte) {
 	return
 }
 
-func readTrexBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 map[string][]interface{}) {
+func readTrexBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 map[string][]interface{}) error {
 	data := make([]byte, size)
 	_, err := r.Read(data)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	var trex TrexBox
 	trex.Size = size
@@ -1836,6 +1873,8 @@ func readTrexBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 ma
 	trex.DefaultSampleFlags = binary.BigEndian.Uint32(data[20:24])
 	addBox(mp4, boxPath, trex)
 	dumpBox(boxPath, trex)
+
+	return nil
 }
 
 func (trex TrexBox) Bytes() (data []byte) {
@@ -1855,11 +1894,11 @@ func (trex TrexBox) Bytes() (data []byte) {
 	return
 }
 
-func readMfhdBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 map[string][]interface{}) {
+func readMfhdBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 map[string][]interface{}) error {
 	data := make([]byte, size)
 	_, err := r.Read(data)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	var mfhd MfhdBox
 	mfhd.Size = size
@@ -1868,6 +1907,8 @@ func readMfhdBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 ma
 	mfhd.SequenceNumber = binary.BigEndian.Uint32(data[4:8])
 	addBox(mp4, boxPath, mfhd)
 	dumpBox(boxPath, mfhd)
+
+	return nil
 }
 
 func (mfhd MfhdBox) Bytes() (data []byte) {
@@ -1883,11 +1924,11 @@ func (mfhd MfhdBox) Bytes() (data []byte) {
 	return
 }
 
-func readTfhdBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 map[string][]interface{}) {
+func readTfhdBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 map[string][]interface{}) error {
 	data := make([]byte, size)
 	_, err := r.Read(data)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	var tfhd TfhdBox
 	tfhd.Size = size
@@ -1917,6 +1958,8 @@ func readTfhdBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 ma
 	}
 	addBox(mp4, boxPath, tfhd)
 	dumpBox(boxPath, tfhd)
+
+	return nil
 }
 
 func (tfhd TfhdBox) Bytes() (data []byte) {
@@ -1953,11 +1996,11 @@ func (tfhd TfhdBox) Bytes() (data []byte) {
 	return
 }
 
-func readTrunBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 map[string][]interface{}) {
+func readTrunBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 map[string][]interface{}) error {
 	data := make([]byte, size)
 	_, err := r.Read(data)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	var trun TrunBox
 	trun.Version = data[0]
@@ -2001,6 +2044,8 @@ func readTrunBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 ma
 	}
 	addBox(mp4, boxPath, trun)
 	dumpBox(boxPath, trun)
+
+	return nil
 }
 
 func (trun TrunBox) Bytes() (data []byte) {
@@ -2046,12 +2091,12 @@ func (trun TrunBox) Bytes() (data []byte) {
 	return
 }
 
-func readTfdtBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 map[string][]interface{}) {
+func readTfdtBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 map[string][]interface{}) error {
 	var offset uint32
 	data := make([]byte, size)
 	_, err := r.Read(data)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	var tfdt TfdtBox
 	tfdt.Size = size
@@ -2060,7 +2105,7 @@ func readTfdtBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 ma
 		if debugMode {
 			log.Printf("ERROR: Unknown %s box version", boxPath)
 		}
-		return
+		return nil
 	}
 	copy(tfdt.Reserved[:], data[1:4])
 	offset = 4
@@ -2071,6 +2116,8 @@ func readTfdtBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 ma
 	}
 	addBox(mp4, boxPath, tfdt)
 	dumpBox(boxPath, tfdt)
+
+	return nil
 }
 
 func (tfdt TfdtBox) Bytes() (data []byte) {
@@ -2093,17 +2140,19 @@ func (tfdt TfdtBox) Bytes() (data []byte) {
 	return
 }
 
-func readFrmaBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 map[string][]interface{}) {
+func readFrmaBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 map[string][]interface{}) error {
 	data := make([]byte, size)
 	_, err := r.Read(data)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	var frma FrmaBox
 	frma.Size = size
 	copy(frma.DataFormat[:], data[0:4])
 	addBox(mp4, boxPath, frma)
 	dumpBox(boxPath, frma)
+
+	return nil
 }
 
 func (frma FrmaBox) Bytes() (data []byte) {
@@ -2117,11 +2166,11 @@ func (frma FrmaBox) Bytes() (data []byte) {
 	return
 }
 
-func readSchmBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 map[string][]interface{}) {
+func readSchmBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 map[string][]interface{}) error {
 	data := make([]byte, size)
 	_, err := r.Read(data)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	var schm SchmBox
 	schm.Size = size
@@ -2134,6 +2183,8 @@ func readSchmBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 ma
 	}
 	addBox(mp4, boxPath, schm)
 	dumpBox(boxPath, schm)
+
+	return nil
 }
 
 func (schm SchmBox) Bytes() (data []byte) {
@@ -2153,24 +2204,26 @@ func (schm SchmBox) Bytes() (data []byte) {
 	return
 }
 
-func readMdatBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 map[string][]interface{}) {
+func readMdatBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 map[string][]interface{}) error {
 	var mdat MdatBox
 
 	mdat.Size = size
 	// mdat.Filename = f.Name() removed to achieve io.ReadSeeker compatibility
 	offset, err := r.Seek(0, os.SEEK_CUR)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	mdat.Offset = offset
 
 	_, err = r.Seek(int64(size), os.SEEK_CUR)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	addBox(mp4, boxPath, mdat)
 	dumpBox(boxPath, mdat)
+
+	return nil
 }
 
 func (mdat MdatBox) Bytes() (data []byte) {
@@ -2178,14 +2231,15 @@ func (mdat MdatBox) Bytes() (data []byte) {
 	data = make([]byte, boxSize)
 	binary.BigEndian.PutUint32(data[0:4], boxSize)
 	copy(data[4:8], []byte{'m', 'd', 'a', 't'})
-	f, err := os.Open(mdat.Filename)
+
+	/* f, err := os.Open(mdat.Filename)
 	if err != nil {
 		panic(err)
 	}
 	_, err = f.ReadAt(data[8:], mdat.Offset)
 	if err != nil {
 		panic(err)
-	}
+	} removed to achieve io.ReadSeeker compatibility */
 
 	return
 }
@@ -2195,7 +2249,7 @@ func (mdat MdatBox) ToBytes() (data []byte) {
 		return make([]byte, 0)
 	}
 
-	boxSize := mdat.Size
+	/* boxSize := mdat.Size
 	data = make([]byte, boxSize)
 	f, err := os.Open(mdat.Filename)
 	if err != nil {
@@ -2204,17 +2258,17 @@ func (mdat MdatBox) ToBytes() (data []byte) {
 	_, err = f.ReadAt(data, mdat.Offset)
 	if err != nil {
 		panic(err)
-	}
+	} removed to achieve io.ReadSeeker compatibility */
 
 	return
 }
 
 // Read 8 bytes Box (4 bytes size and 4 bytes box name)
-func readBox(r io.ReadSeeker, level int) (boxSize uint32, boxName string) {
+func readBox(r io.ReadSeeker, level int) (boxSize uint32, boxName string, err error) {
 	data := make([]byte, 8)
-	_, err := r.Read(data)
+	_, err = r.Read(data)
 	if err != nil {
-		panic(err)
+		return
 	}
 
 	boxSize = binary.BigEndian.Uint32(data[0:4])
@@ -2227,12 +2281,16 @@ func readBox(r io.ReadSeeker, level int) (boxSize uint32, boxName string) {
 	return
 }
 
-func readBoxes(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 map[string][]interface{}) {
+func readBoxes(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 map[string][]interface{}) error {
 	var offset uint32
 	offset = 0
 
 	for offset < size {
-		boxSize, boxName := readBox(r, level)
+		boxSize, boxName, err := readBox(r, level)
+		if err != nil {
+			return err
+		}
+
 		var boxFullPath string
 		if boxPath == "" {
 			boxFullPath = boxName
@@ -2249,19 +2307,27 @@ func readBoxes(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 map[
 				box.Size = boxSize
 				addBox(mp4, boxFullPath, box)
 			}
-			var callFunc func(io.ReadSeeker, uint32, int, string, map[string][]interface{})
-			callFunc = funcBoxes[boxFullPath].(func(io.ReadSeeker, uint32, int, string, map[string][]interface{}))
-			callFunc(r, boxSize-8, level+1, boxFullPath, mp4)
+			var callFunc func(io.ReadSeeker, uint32, int, string, map[string][]interface{}) error
+			callFunc = funcBoxes[boxFullPath].(func(io.ReadSeeker, uint32, int, string, map[string][]interface{}) error)
+			err = callFunc(r, boxSize-8, level+1, boxFullPath, mp4)
+			if err != nil {
+				return err
+			}
 		} else {
 			// Skip box because we don't know how to decode it
 			if debugMode {
 				log.Printf("ERROR: Unknown %s box", boxPath)
 			}
-			r.Seek(int64(boxSize-8), 1)
+			_, err = r.Seek(int64(boxSize-8), 1)
+			if err != nil {
+				return err
+			}
 		}
 
 		offset += boxSize
 	}
+
+	return nil
 }
 
 // ***
@@ -2273,15 +2339,16 @@ func Debug(mode bool) {
 }
 
 // Parse the mp4 file header and return all decoded box data in a map[string][]interface{}
-func ParseFile(filename string, language string) (mp4 Mp4) {
+func ParseFile(filename string, language string) (Mp4, error) {
+	mp4 := Mp4{}
 	mp4.Boxes = make(map[string][]interface{})
 	f, err := os.Open(filename)
 	if err != nil {
-		panic(err)
+		return mp4, err
 	}
 	finfo, err := f.Stat()
 	if err != nil {
-		panic(err)
+		return mp4, err
 	}
 	readBoxes(f, uint32(finfo.Size()), 0, "", mp4.Boxes)
 	if debugMode {
@@ -2302,14 +2369,19 @@ func ParseFile(filename string, language string) (mp4 Mp4) {
 		mp4.IsVideo = false
 	}
 
-	return
+	return mp4, nil
 }
 
 // Parse the mp4 file header and return all decoded box data in a map[string][]interface{}
-func Parse(r *bytes.Reader, language string) (mp4 Mp4) {
+func Parse(r *bytes.Reader, language string) (Mp4, error) {
+	mp4 := Mp4{}
 	mp4.Boxes = make(map[string][]interface{})
 
-	readBoxes(r, uint32(r.Size()), 0, "", mp4.Boxes)
+	err := readBoxes(r, uint32(r.Size()), 0, "", mp4.Boxes)
+	if err != nil {
+		return mp4, err
+	}
+
 	if debugMode {
 		log.Printf("[ MP4 STRUCTURE ] %+v", mp4.Boxes)
 	}
@@ -2328,7 +2400,7 @@ func Parse(r *bytes.Reader, language string) (mp4 Mp4) {
 		mp4.IsVideo = false
 	}
 
-	return
+	return mp4, nil
 }
 
 func boxToBytes(box interface{}, boxFullPath string) []byte {
@@ -3443,21 +3515,21 @@ func CreateDashFragmentWithConf(sConf StreamConfig, r io.ReadSeeker, fragmentNum
 // *** Package initialization
 // ***
 
-func ReadMainBoxes(filename string, conf StreamConfig) (mp4 map[string][]interface{}) {
+func ReadMainBoxes(filename string, conf StreamConfig) (mp4 map[string][]interface{}, err error) {
 	mp4 = make(map[string][]interface{})
 
 	f, err := os.Open(filename)
 	if err != nil {
-		panic(err)
+		return mp4, err
 	}
 
 	fInfo, err := f.Stat()
 	if err != nil {
-		panic(err)
+		return mp4, err
 	}
 
-	readBoxes(f, uint32(fInfo.Size()), 0, "", mp4)
-	return
+	err = readBoxes(f, uint32(fInfo.Size()), 0, "", mp4)
+	return mp4, err
 }
 
 func init() {

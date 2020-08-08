@@ -88,7 +88,11 @@ func parseMp4Files(files []inputFile) (mp4Files map[string][]mp4.Mp4) {
 	mp4Files = make(map[string][]mp4.Mp4)
 	for _, in := range files {
 		logger.Message("-- Parsing file='%s' language='%s'", in.Filename, in.Language)
-		mp4File := mp4.ParseFile(in.Filename, in.Language)
+		mp4File, err := mp4.ParseFile(in.Filename, in.Language)
+		if err != nil {
+			panic(err)
+		}
+
 		if mp4File.IsVideo == true {
 			mp4Files["video"] = append(mp4Files["video"], mp4File)
 		}
