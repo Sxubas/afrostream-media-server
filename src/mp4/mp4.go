@@ -34,6 +34,7 @@ package mp4
 import (
 	"bytes"
 	"encoding/binary"
+	"errors"
 	"io"
 	"log"
 	"os"
@@ -2350,7 +2351,11 @@ func ParseFile(filename string, language string) (Mp4, error) {
 	if err != nil {
 		return mp4, err
 	}
-	readBoxes(f, uint32(finfo.Size()), 0, "", mp4.Boxes)
+	err = readBoxes(f, uint32(finfo.Size()), 0, "", mp4.Boxes)
+	if err != nil && !errors.Is(err, io.EOF) {
+		return mp4, err
+	}
+
 	if debugMode {
 		log.Printf("[ MP4 STRUCTURE ] %+v", mp4.Boxes)
 	}
@@ -2378,7 +2383,7 @@ func Parse(r *bytes.Reader, language string) (Mp4, error) {
 	mp4.Boxes = make(map[string][]interface{})
 
 	err := readBoxes(r, uint32(r.Size()), 0, "", mp4.Boxes)
-	if err != nil {
+	if err != nil && !errors.Is(err, io.EOF) {
 		return mp4, err
 	}
 
