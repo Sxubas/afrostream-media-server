@@ -1401,13 +1401,35 @@ func readAvcCBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 ma
 	avcC.SPSEntryCount = data[5] - 0xe0
 	avcC.SPSSize = binary.BigEndian.Uint16(data[6:8])
 	offset = 8
-	avcC.SPSData = data[offset : offset+(uint32(avcC.SPSSize)*uint32(avcC.SPSEntryCount))]
-	offset += uint32(avcC.SPSSize) * uint32(avcC.SPSEntryCount)
+
+	SPSDataLength := uint32(avcC.SPSSize) * uint32(avcC.SPSEntryCount)
+
+	if int64(offset+SPSDataLength) > int64(len(data)) {
+		if debugMode {
+			log.Printf("ERROR: unexpected length for Sequence Parameters data. Current: %d, data size: %d", SPSDataLength, size)
+		}
+
+		return nil
+	}
+
+	avcC.SPSData = data[offset : offset+SPSDataLength]
+	offset += SPSDataLength
 	avcC.PPSEntryCount = data[offset]
 	offset++
 	avcC.PPSSize = binary.BigEndian.Uint16(data[offset : offset+2])
 	offset += 2
-	avcC.PPSData = data[offset : offset+(uint32(avcC.PPSSize)*uint32(avcC.PPSEntryCount))]
+
+	PPSDataLength := uint32(avcC.PPSSize) * uint32(avcC.PPSEntryCount)
+
+	if int64(offset+PPSDataLength) > int64(len(data)) {
+		if debugMode {
+			log.Printf("ERROR: unexpected length for Picture Parameters data. Current: %d, data size: %d", SPSDataLength, size)
+		}
+
+		return nil
+	}
+
+	avcC.PPSData = data[offset : offset+PPSDataLength]
 
 	addBox(mp4, boxPath, avcC)
 	dumpBox(boxPath, avcC)
@@ -1598,8 +1620,15 @@ func readSdtpBox(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 ma
 		stsz := mp4["moov.trak.mdia.minf.stbl.stsz"][0].(StszBox)
 		sdtp.SampleCount = stsz.SampleCount
 		sdtp.Entries = make([]uint8, sdtp.SampleCount)
+
+		if int64(sdtp.SampleCount) > int64(len(data)) {
+			if debugMode {
+				log.Printf("ERROR: unexpected sdtp sample count. Current: %d, data size: %d", sdtp.SampleCount, size)
+			}
+		}
+
 		var i uint32
-		for i = 0; i < sdtp.SampleCount; i++ {
+		for i = 0; i < sdtp.SampleCount && int64(i+1) < int64(len(data)); i++ {
 			sdtp.Entries[i] = uint8(data[1+i])
 		}
 	} else {
