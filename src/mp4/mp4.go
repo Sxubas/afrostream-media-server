@@ -2321,6 +2321,10 @@ func readBoxes(r io.ReadSeeker, size uint32, level int, boxPath string, mp4 map[
 			return err
 		}
 
+		if boxSize-8 == 0 {
+			continue
+		}
+
 		var boxFullPath string
 		if boxPath == "" {
 			boxFullPath = boxName
